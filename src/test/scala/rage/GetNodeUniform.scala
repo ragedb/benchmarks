@@ -32,8 +32,8 @@ class GetNodeUniform extends Simulation {
     println(s"Running test with ${params.userCount}")
     println(s"Total test duration ${params.testDuration} seconds")
   }
-  val start = 0
-  val end   = 3000000
+  val start: Int = params.fromId
+  val end: Int = params.toId
   val incrementalFeeder: Iterator[Map[String, Long]] = Iterator.continually(Map("uuid" -> Random.between(start, end)))
 
   val httpProtocol: HttpProtocolBuilder =
