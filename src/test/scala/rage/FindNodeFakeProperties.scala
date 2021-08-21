@@ -16,14 +16,15 @@
 
 package rage
 
-import java.util.Random
 import io.gatling.core.Predef._
 import io.gatling.core.structure.ScenarioBuilder
 import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
 import io.gatling.http.request.builder.HttpRequestBuilder
 
-class CreateNodeFakeProperties extends Simulation {
+import java.util.Random
+
+class FindNodeFakeProperties extends Simulation {
 
   val params = new TestParameters
 
@@ -40,12 +41,7 @@ class CreateNodeFakeProperties extends Simulation {
 
   val fakeFeeder: Iterator[Map[String, Any]] = Iterator.continually(
     Map(
-      "uuid" -> usFaker.idNumber().valid(),
-      "number" -> usFaker.number().numberBetween(1,100),
-      "street_address" -> usFaker.address.streetAddress(true),
-      "zip_code" -> usFaker.address.zipCode(),
-      "state" -> usFaker.address.stateAbbr,
-      "city" -> String.format("%s%s", usFaker.address.cityPrefix, usFaker.address.citySuffix)
+      "number" -> usFaker.number().numberBetween(1,100)
     )
   )
 
@@ -56,19 +52,18 @@ class CreateNodeFakeProperties extends Simulation {
       .maxConnectionsPerHost(1)
 
   def createPostRequest: HttpRequestBuilder = {
-    http("CreateNodeFakeProperties")
-      .post("/db/" + params.rageDB + "/node/Address/${uuid}")
-      .body(StringBody(   """{ "number": ${number}, "street_address": "${street_address}", "city": "${city}","state": "${state}","zip_code": "${zip_code}" }"""))
+    http("FindNodeFakeProperties")
+      .post("/db/" + params.rageDB + "/nodes/Address/number/EQ")
+      .body(StringBody(   """${number}"""))
       .asJson
-      .check(status.is(201))
+      .check(status.is(200))
   }
 
-  val scn: ScenarioBuilder = scenario("rage.CreateNodeFakeProperties")
+  val scn: ScenarioBuilder = scenario("rage.FindNodeFakeProperties")
     .during(params.testDuration) {
       feed(fakeFeeder)
         .exec(createPostRequest)
     }
 
   setUp(scn.inject(atOnceUsers(params.userCount))).protocols(httpProtocol).disablePauses
-
 }
