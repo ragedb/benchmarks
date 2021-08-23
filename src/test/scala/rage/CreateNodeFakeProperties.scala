@@ -23,6 +23,8 @@ import io.gatling.http.Predef._
 import io.gatling.http.protocol.HttpProtocolBuilder
 import io.gatling.http.request.builder.HttpRequestBuilder
 
+import java.util.concurrent.atomic.AtomicInteger
+
 class CreateNodeFakeProperties extends Simulation {
 
   val params = new TestParameters
@@ -37,11 +39,11 @@ class CreateNodeFakeProperties extends Simulation {
   import java.util.Locale
 
   val usFaker = new Faker(new Locale("en-US"), new Random(1234))
-
+  val id = new AtomicInteger(0)
   val fakeFeeder: Iterator[Map[String, Any]] = Iterator.continually(
     Map(
-      "uuid" -> usFaker.idNumber().valid(),
-      "number" -> usFaker.number().numberBetween(1,100),
+      "uuid" -> id.getAndIncrement(),
+      "number" -> usFaker.number().numberBetween(1,100000),
       "street_address" -> usFaker.address.streetAddress(true),
       "zip_code" -> usFaker.address.zipCode(),
       "state" -> usFaker.address.stateAbbr,
@@ -64,11 +66,11 @@ class CreateNodeFakeProperties extends Simulation {
   }
 
   val scn: ScenarioBuilder = scenario("rage.CreateNodeFakeProperties")
-    .during(params.testDuration) {
+    .repeat(100000) {
       feed(fakeFeeder)
         .exec(createPostRequest)
     }
 
-  setUp(scn.inject(atOnceUsers(params.userCount))).protocols(httpProtocol).disablePauses
+  setUp(scn.inject(atOnceUsers(10))).protocols(httpProtocol).disablePauses
 
 }
