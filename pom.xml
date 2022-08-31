@@ -11,9 +11,9 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <encoding>UTF-8</encoding>
 
-    <gatling.version>3.6.1</gatling.version>
+    <gatling.version>3.8.3</gatling.version>
     <javafaker.version>1.0.2</javafaker.version>
-    <gatling-maven-plugin.version>3.1.2</gatling-maven-plugin.version>
+    <gatling-maven-plugin.version>4.2.0</gatling-maven-plugin.version>
   </properties>
 
   <dependencies>
