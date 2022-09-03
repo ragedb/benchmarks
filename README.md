@@ -2,18 +2,23 @@
 
 ## Results:
 
-Results as of September 3rd:
+Results as of September 3rd on LDBC SNB SF01:
 
-| Query |   Total |      OK | KO |   q/s | min | 99th | max | mean |
-|-------|--------:|--------:|----|------:|----:|-----:|----:|-----:|
-| IS01  | 2040409 | 2040409 |  0 | 33449 |   0 |    3 |  51 |    2 |
-| IS02  |  114449 |  114435 | 14 |  1876 |  11 |   50 |  90 |   34 |
-| IS03  |   92318 |   92318 |  0 |  1513 |   4 |  100 | 211 |   42 |
-| IS04  | 3059866 | 3059866 |  0 | 50161 |   0 |    2 |  44 |    1 |
+| Query |    Total |      OK | KO  |   q/s | min | 99th | max | mean |
+|-------|---------:|--------:|-----|------:|----:|-----:|----:|-----:|
+| IS01  |  2040409 | 2040409 | 0   | 33449 |   0 |    3 |  51 |    2 |
+| IS02  |   114449 |  114435 | 14  |  1876 |  11 |   50 |  90 |   34 |
+| IS03  |    92318 |   92318 | 0   |  1513 |   4 |  100 | 211 |   42 |
+| IS04  |  3059866 | 3059866 | 0   | 50161 |   0 |    2 |  44 |    1 |
+| IS05  |  3255946 | 3255946 | 0   | 51681 |   0 |    2 |  73 |    1 |
+| IS06  |  2146561 | 2146561 | 0   | 35189 |   0 |    3 |  72 |    2 |
+| IS07  |  1153119 | 1153118 | 1   | 18903 |   0 |    6 |  56 |    3 |
 
-RageDB Parameters:
+Benchmark Parameters:
 
-    -c4     // This limits RageDB to 4 (out of the 8) cores
+    userCount: 64           // Concurrent requests
+    duration:  60 seconds   // Test duration
+    ragedb -c4              // This limits RageDB to 4 (out of the 8) cores
 
 Physical Server:
 
