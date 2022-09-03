@@ -16,7 +16,7 @@ class InteractiveShort01  extends Simulation {
     println(s"Total test duration ${params.testDuration} seconds")
   }
 
-  val csvFeeder: Iterator[Map[String, Any]] = csv("snb-is01.csv").random()
+  val csvFeeder: Iterator[Map[String, Any]] = csv("snb-is01-persons.csv").random()
 
   val httpProtocol: HttpProtocolBuilder =
     http
@@ -25,7 +25,7 @@ class InteractiveShort01  extends Simulation {
       .maxConnectionsPerHost(1)
 
   def request: HttpRequestBuilder = {
-    http("LDBC SNB Interactive Short 01")
+    http("LDBC SNB IS 01")
       .post("/db/" + params.rageDB + "/lua")
       .body(StringBody("""ldbc_snb_is01("#{person_id}")""".stripMargin))
       //.asJson
