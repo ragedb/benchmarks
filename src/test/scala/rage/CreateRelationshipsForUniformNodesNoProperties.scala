@@ -29,7 +29,7 @@ class CreateRelationshipsForUniformNodesNoProperties extends Simulation {
 
   before {
     println(s"Rage URL: ${params.rageURL} Rage DB: ${params.rageDB}")
-    println(s"Running test with ${params.userCount}")
+    println(s"Running test with ${params.userCount} users")
     println(s"Total test duration ${params.testDuration} seconds")
     println(s"From ID ${params.fromId}")
     println(s"To ID ${params.toId}")
@@ -50,7 +50,7 @@ class CreateRelationshipsForUniformNodesNoProperties extends Simulation {
 
   def request: HttpRequestBuilder = {
     http("CreateRelationshipsForUniformNodesNoProperties")
-      .post("/db/" + params.rageDB + "/node/Node/${uuid_1}/relationship/Node/${uuid_2}/TYPE_${rel_type_id}")
+      .post("/db/" + params.rageDB + "/node/Node/#{uuid_1}/relationship/Node/#{uuid_2}/TYPE_#{rel_type_id}")
       .check(status.is(201))
   }
 

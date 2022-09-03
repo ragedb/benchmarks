@@ -44,7 +44,7 @@ class GetNodeUniform extends Simulation {
 
   def request: HttpRequestBuilder = {
     http("GetNodeUniform")
-      .get("/db/" + params.rageDB + "/node/Node/${uuid}")
+      .get("/db/" + params.rageDB + "/node/Node/#{uuid}")
       .check(status.is(200))
   }
 

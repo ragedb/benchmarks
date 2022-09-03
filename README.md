@@ -29,6 +29,16 @@
     RelationshipTypeInsert("TYPE_9")
     RelationshipTypeInsert("TYPE_10")
 
+
+### Pre-Requisites for LDBC SNB Tests
+
+1. Create the schema
+2. Import the data
+3. Create the stored procedures
+
+See https://github.com/ragedb/example-queries for details
+
+
 Command Line Instructions
 -------------------------
 

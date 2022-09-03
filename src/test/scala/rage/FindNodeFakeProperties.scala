@@ -54,7 +54,7 @@ class FindNodeFakeProperties extends Simulation {
   def createPostRequest: HttpRequestBuilder = {
     http("FindNodeFakeProperties")
       .post("/db/" + params.rageDB + "/nodes/Address/number/EQ?limit=10&skip=5")
-      .body(StringBody(   """${number}"""))
+      .body(StringBody(   """#{number}"""))
       .asJson
       .check(status.is(200))
   }

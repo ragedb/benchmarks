@@ -30,7 +30,7 @@ class CreateNodeRandomNoProperties extends Simulation {
 
   before {
     println(s"Rage URL: ${params.rageURL} Rage DB: ${params.rageDB}")
-    println(s"Running test with ${params.userCount}")
+    println(s"Running test with ${params.userCount} users")
     println(s"Total test duration ${params.testDuration} seconds")
   }
 
@@ -45,7 +45,7 @@ class CreateNodeRandomNoProperties extends Simulation {
 
   def request: HttpRequestBuilder = {
     http("CreateNodeRandomNoProperties")
-      .post("/db/" + params.rageDB + "/node/Node/${uuid}")
+      .post("/db/" + params.rageDB + "/node/Node/#{uuid}")
       .check(status.is(201))
   }
 

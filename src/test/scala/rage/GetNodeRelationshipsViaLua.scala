@@ -50,7 +50,7 @@ class GetNodeRelationshipsViaLua extends Simulation {
   def request: HttpRequestBuilder = {
     http("GetNodeRelationshipsViaLua")
       .post("/db/" + params.rageDB + "/lua")
-      .body(StringBody("""NodeGetRelationships("Node","${uuid}")""".stripMargin))
+      .body(StringBody("""NodeGetRelationships("Node","#{uuid}")""".stripMargin))
       //.asJson
       .check(status.is(200))
   }

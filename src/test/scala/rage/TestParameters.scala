@@ -25,7 +25,7 @@ class TestParameters {
 
   def rageURL: String = getProperty("RAGE_URL", "http://localhost:7243")
   def rageDB: String = getProperty("RAGE_DB", "rage")
-  def userCount: Int = getProperty("USERS", "32").toInt
+  def userCount: Int = getProperty("USERS", "64").toInt
   def testDuration: Int = getProperty("DURATION", "60").toInt
   def fromId: Int = getProperty("FROM_ID", "0").toInt
   def toId: Int = getProperty("TO_ID", "3000000").toInt

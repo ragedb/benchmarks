@@ -59,8 +59,8 @@ class CreateNodeFakeProperties extends Simulation {
 
   def createPostRequest: HttpRequestBuilder = {
     http("CreateNodeFakeProperties")
-      .post("/db/" + params.rageDB + "/node/Address/${uuid}")
-      .body(StringBody(   """{ "number": ${number}, "street_address": "${street_address}", "city": "${city}","state": "${state}","zip_code": "${zip_code}" }"""))
+      .post("/db/" + params.rageDB + "/node/Address/#{uuid}")
+      .body(StringBody(   """{ "number": #{number}, "street_address": "#{street_address}", "city": "#{city}","state": "#{state}","zip_code": "#{zip_code}" }"""))
       .asJson
       .check(status.is(201))
   }

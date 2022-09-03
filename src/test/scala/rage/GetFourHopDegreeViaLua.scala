@@ -30,7 +30,7 @@ class GetFourHopDegreeViaLua extends Simulation {
 
   before {
     println(s"Rage URL: ${params.rageURL} Rage DB: ${params.rageDB}")
-    println(s"Running test with ${params.userCount}")
+    println(s"Running test with ${params.userCount} users")
     println(s"Total test duration ${params.testDuration} seconds")
     println(s"From ID ${params.fromId}")
     println(s"To ID ${params.toId}")
@@ -53,7 +53,7 @@ class GetFourHopDegreeViaLua extends Simulation {
       .post("/db/" + params.rageDB + "/lua")
       .body(StringBody(
         """count = 0
-          |for key, value in pairs(NodeGetRelationshipsIds("Node","${uuid}")) do
+          |for key, value in pairs(NodeGetRelationshipsIds("Node","#{uuid}")) do
           |  for key2, value2 in pairs(NodeGetRelationshipsIdsById(value.node_id)) do
           |    for key3, value3 in pairs(NodeGetRelationshipsIdsById(value2.node_id)) do
           |      for key4, value4 in pairs(NodeGetRelationshipsIdsById(value3.node_id)) do

@@ -30,7 +30,7 @@ class CreateNodeUniform1Property extends Simulation {
 
   before {
     println(s"Rage URL: ${params.rageURL} Rage DB: ${params.rageDB}")
-    println(s"Running test with ${params.userCount}")
+    println(s"Running test with ${params.userCount} users")
     println(s"Total test duration ${params.testDuration} seconds")
   }
   val id = new AtomicLong(0)
@@ -44,8 +44,8 @@ class CreateNodeUniform1Property extends Simulation {
 
   def request: HttpRequestBuilder = {
     http("CreateNodeUniform1Property")
-      .post("/db/" + params.rageDB + "/node/Node/${uuid}")
-      .body(StringBody("""{"name": "${uuid}" }"""))
+      .post("/db/" + params.rageDB + "/node/Node/#{uuid}")
+      .body(StringBody("""{"name": "#{uuid}" }"""))
       .asJson
       .check(status.is(201))
   }

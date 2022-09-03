@@ -45,7 +45,7 @@ class GetRelationshipsFromNodeUniform extends Simulation {
 
   def request: HttpRequestBuilder = {
     http("GetRelationshipsFromNodeUniform")
-      .get("/db/" + params.rageDB + "/node/Node/${uuid}/relationships")
+      .get("/db/" + params.rageDB + "/node/Node/#{uuid}/relationships")
       .check(status.is(200))
   }
 
