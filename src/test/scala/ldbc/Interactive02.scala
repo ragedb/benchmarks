@@ -27,7 +27,7 @@ class Interactive02 extends Simulation {
   def request: HttpRequestBuilder = {
     http("LDBC SNB IQ 02")
       .post("/db/" + params.rageDB + "/lua")
-      .body(StringBody("""ldbc_snb_iq02("#{personId}",date(#{maxDate}))""".stripMargin))
+      .body(StringBody("""ldbc_snb_iq02("#{personId}",#{maxDate})""".stripMargin))
       //.asJson
       .check(status.is(200))
   }
