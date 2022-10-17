@@ -2,7 +2,40 @@
 
 ## Results:
 
-Results as of October 9, 2022, on LDBC SNB SF01:
+Results as of October 16, 2022, on LDBC SNB SF01:
+
+4 Concurrent Threads:
+
+| Query |   Total |      OK | KO  |   q/s | min | 99th | max | mean |
+|-------|--------:|--------:|-----|------:|----:|-----:|----:|-----:|
+| IQ01  |   32305 |   32305 | 0   |   529 |   0 |   16 |  26 |    7 |
+| IQ02  |    1570 |    1570 | 0   |    25 |   6 |  217 | 253 |  153 |
+| IQ13  | 2428469 | 2428469 | 0   | 39810 |   0 |    1 |  23 |    0 |
+| IS01  | 1904541 | 1904541 | 0   | 31221 |   0 |    1 |  92 |    0 |
+| IS02  |  120150 |  120150 | 0   |  1969 |   0 |    7 |  20 |    2 |
+| IS03  |  129330 |  129330 | 0   |  2120 |   0 |   10 |  24 |    2 |
+| IS04  | 2823326 | 2823326 | 0   | 46284 |   0 |    1 |  24 |    0 |
+| IS05  | 2593434 | 2593434 | 0   | 42515 |   0 |    1 |  33 |    0 |
+| IS06  | 1897311 | 1897311 | 0   | 31103 |   0 |    1 |  21 |    0 |
+| IS07  | 1259833 | 1259833 | 0   | 20653 |   0 |    1 |  21 |    0 |
+
+
+8 Concurrent Threads:
+
+| Query |   Total |      OK | KO  |   q/s | min | 99th | max | mean |
+|-------|--------:|--------:|-----|------:|----:|-----:|----:|-----:|
+| IQ01  |   31724 |   31724 | 0   |   520 |   0 |   27 |  43 |   15 |
+| IQ02  |    1547 |    1547 | 0   |    25 |  48 |  414 | 439 |  311 |
+| IQ13  | 2852937 | 2852937 | 0   | 46769 |   0 |    1 |  24 |    0 |
+| IS01  | 2111351 | 2111351 | 0   | 34612 |   0 |    1 |  27 |    0 |
+| IS02  |  116536 |  116536 | 0   |  1910 |   0 |   12 |  26 |    4 |
+| IS03  |  129718 |  129718 | 0   |  2126 |   0 |   15 |  35 |    4 |
+| IS04  | 3275303 | 3275303 | 0   | 53693 |   0 |    1 |  16 |    0 |
+| IS05  | 3010022 | 3010022 | 0   | 49344 |   0 |    1 |  36 |    0 |
+| IS06  | 2068098 | 2068098 | 0   | 33903 |   0 |    1 |  22 |    0 |
+| IS07  | 1343896 | 1343896 | 0   | 22031 |   0 |    2 |  24 |    0 |
+
+64 Concurrent Threads: 
 
 | Query |   Total |      OK | KO  |   q/s | min | 99th |  max | mean |
 |-------|--------:|--------:|-----|------:|----:|-----:|-----:|-----:|
@@ -93,4 +126,20 @@ You can pass in test parameters for the simulation
 
     mvn gatling:test -DUSERS=8 -DDURATION=30 -RAGE_URL="http://127.0.0.1:7243" -DRAGE_DB=rage -Dgatling.simulationClass=rage.CreateNodeUniformNoProperties
 
-    
+
+export SF=1
+export LDBC_SNB_DATAGEN_MAX_MEM=32G
+export LDBC_SNB_DATAGEN_JAR=$(sbt -batch -error 'print assembly / assemblyOutputPath')    
+
+rm -rf out-sf${SF}/{factors,graphs/parquet/raw}
+tools/run.py \
+--cores $(nproc) \
+--memory ${LDBC_SNB_DATAGEN_MAX_MEM} \
+-- \
+--format parquet \
+--scale-factor ${SF} \
+--mode raw \
+--output-dir out-sf${SF} \
+--generate-factors
+
+./tools/run.py -- --format csv --scale-factor 0.003 --mode bi --generate-factors --conf 
