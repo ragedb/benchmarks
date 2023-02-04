@@ -488,12 +488,12 @@ ldbc_snb_iq05 = function(person_id, min_date)
     local friend_of_friends = NodeIdsGetNeighborIds(friends, "KNOWS")
 
     local otherPerson = Roar.new()
-    otherPerson:addNodeIds(friends)
+    otherPerson:addIds(friends)
     for friend_id, fof_ids in pairs(friend_of_friends) do
-        otherPerson:addNodeIds(fof_ids)
+        otherPerson:addIds(fof_ids)
     end
     -- Remove original person from friends and fof list
-    otherPerson.remove(node_id)
+    otherPerson:remove(node_id)
 
     --Find Forums that any Person otherPerson became a member of after a given date ($minDate).
     local other_id_forum_links = LinksGetLinks(otherPerson:getNodeHalfLinks(), Direction.IN, "HAS_MEMBER")
@@ -501,36 +501,60 @@ ldbc_snb_iq05 = function(person_id, min_date)
     for other_id, forum_links in pairs(other_id_forum_links) do
         forum_rels:addRelationshipIds(forum_links)
     end
+    -- Only those after a certain date, side one of the triangle
     local valid_memberships = FilterRelationshipIds(forum_rels:getIds(), "HAS_MEMBER", "joinDate", Operation.GT, min_date_double, 0, 10000000)
 
-    -- Traverse Links to Links
     local membership_check = Roar.new()
     membership_check:addIds(valid_memberships)
 
-    -- Get posts from other person
-    local other_person_message_ids = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
-
-    local forum_counts = {}
-
-    -- Get Valid Forums per other_id
-    for other_id_link, forum_links in pairs(other_id_forum_links)
-        local other_id = other_id_link:getNodeId()
+    -- Get Valid forums
+    local valid_other_id_forum_ids = {}
+    local all_valid_forums = Roar.new()
+    for other_id, forum_links in pairs(other_id_forum_links) do
         local valid_forums = {}
         for i = 1, #forum_links do
-            if (membership_check:contains(forum_links[i]:getRelationshipId() then
-                table.insert(valid_forums, forum_links[i]:getNodeId()
+            if (membership_check:contains(forum_links[i]:getRelationshipId())) then
+                table.insert(valid_forums, forum_links[i]:getNodeId())
             end
         end
-        -- Close the triangle
-        local valid_posts = NodeIdsGetNeighborIds(other_person_message_ids[other_id], Direction.IN, "CONTAINER_OF", valid_forums)
-        for message_id, forum_ids in pairs(valid_posts) do
-        -- Group Count
-        forum_counts[forum_ids[1]] = (forum_counts[forum_ids[1]] or 0) + 1
+        if (#valid_forums > 0) then
+            valid_other_id_forum_ids[other_id:getNodeId()] = valid_forums
+            all_valid_forums:addIds(valid_forums)
+        end
+    end
+
+    -- Get posts from other person, side two of the triangle
+    local other_person_message_ids = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
+    local all_messages = Roar.new()
+    for other_id, message_ids in pairs(other_person_message_ids) do
+       all_messages:addIds(message_ids)
+    end
+
+    -- Get side 3 and close the triangle
+    local valid_posts = NodeIdsGetNeighborIds(all_valid_forums:getIds(), Direction.OUT, "CONTAINER_OF", all_messages:getIds())
+
+    -- We have to further filter the valid posts per other person/forum id
+    local forum_counts = {}
+    local temp_count = 0
+    for other_id, forum_ids in pairs(valid_other_id_forum_ids) do
+        --temp_count = temp_count + 1 -- 2,443
+        if (other_person_message_ids[other_id]) then
+            temp_count = temp_count + 1 -- 0
+            for i = 1, #forum_ids do
+                if (valid_posts[forum_ids[i]]) then
+                -- get intersection of the messages in a forum, with the messages of a person
+                local forum_count = IntersectIdsCount(valid_posts[forum_ids[i]], other_person_message_ids[other_id])
+                if (forum_count > 0) then
+                    forum_counts[forum_ids[i]] = (forum_counts[forum_ids[i]]  or 0) + forum_count
+                end
+                end
+            end
+        end
     end
 
     local results = {}
     for forum_id, post_count in pairs(forum_counts) do
-        table.insert(results, { ["forum.title"] = forum_id, ["postCount"] = post_count }
+        table.insert(results, { ["forum.title"] = forum_id, ["postCount"] = post_count })
     end
 
     -- Sort whatever is left by total count desc and id ascending

@@ -1,7 +1,6 @@
 local person_id = "8796093030404"
 local min_date  = 1347062400000
 
-
     local min_date_double = min_date / 1000.0
     -- Find the person
     local node_id = NodeGetId("Person", person_id)
@@ -16,40 +15,64 @@ local min_date  = 1347062400000
     end
     -- Remove original person from friends and fof list
     otherPerson:remove(node_id)
+    -- 7ms
 
-    --Find Forums that any Person otherPerson became a member of after a given date ($minDate).
+
+     -- This could be combined into a LinksGetLinksWithPredicate
+
+
+
+     --Find Forums that any Person otherPerson became a member of after a given date ($minDate).
     local other_id_forum_links = LinksGetLinks(otherPerson:getNodeHalfLinks(), Direction.IN, "HAS_MEMBER")
     local forum_rels = Roar.new()
     for other_id, forum_links in pairs(other_id_forum_links) do
         forum_rels:addRelationshipIds(forum_links)
     end
-    local valid_memberships = FilterRelationshipIds(forum_rels:getIds(), "HAS_MEMBER", "joinDate", Operation.GT, min_date_double, 0, 10000000)
+    -- 350ms
+        -- Only those after a certain date, side one of the triangle
+    local valid_memberships = FilterRelationshipIds(forum_rels:getIds(), "HAS_MEMBER", "joinDate", Operation.GT, min_date_double, 0, 10000000) -- 18218
+    -- 367ms
 
-    -- Traverse Links to Links
+
+    -- Instead of building all_valid_forums here, we could get the messages of each user and then use the forum per user to find the container of forum, then count
+
+
     local membership_check = Roar.new()
     membership_check:addIds(valid_memberships)
 
-    -- Get posts from other person
-    local other_person_message_ids = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
-
-    local forum_counts = {}
-
-    -- Get Valid Forums per other_id
-    for other_id_link, forum_links in pairs(other_id_forum_links) do
-        local other_id = other_id_link:getNodeId()
+    -- Get Valid forums
+    local valid_other_id_forum_ids = {}
+    local all_valid_forums = Roar.new()
+    for other_id, forum_links in pairs(other_id_forum_links) do
         local valid_forums = {}
         for i = 1, #forum_links do
             if (membership_check:contains(forum_links[i]:getRelationshipId())) then
                 table.insert(valid_forums, forum_links[i]:getNodeId())
             end
         end
-        -- Close the triangle
-        local valid_posts = NodeIdsGetNeighborIds(other_person_message_ids[other_id], Direction.IN, "CONTAINER_OF", valid_forums)
-        for message_id, forum_ids in pairs(valid_posts) do
-            -- Group Count
-            forum_counts[forum_ids[1]] = (forum_counts[forum_ids[1]] or 0) + 1
+        table.sort(valid_forums)
+        valid_other_id_forum_ids[other_id:getNodeId()] = valid_forums
+        all_valid_forums:addIds(valid_forums)
+    end
+    -- 550ms
+
+
+    local temp_ids = {}
+    local temp_count = 0
+    -- Get posts from other person, side two of the triangle
+    local forum_counts = {}
+    local other_person_message_ids = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
+    for other_id, message_ids in pairs(other_person_message_ids) do
+        temp_ids = other_id
+        local valid_other_id_messages = NodeIdsGetNeighborIds(message_ids, Direction.IN, "CONTAINER_OF", valid_other_id_forum_ids[other_id])
+        temp_count = temp_count + 1
+        for message_id, forum_ids in pairs(valid_other_id_messages) do
+             temp_count = temp_count + 1
+            forum_counts[forum_ids[1]] = (forum_counts[forum_ids[1]]  or 0) + 1
         end
     end
+
+
 
     local results = {}
     for forum_id, post_count in pairs(forum_counts) do
@@ -71,6 +94,5 @@ local min_date  = 1347062400000
     for i = 1, #smaller do
       smaller[i]["forum.title"] = NodeGetProperty(smaller[i]["forum.title"], "title")
     end
-
 
 smaller
