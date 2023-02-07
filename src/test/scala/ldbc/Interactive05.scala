@@ -16,7 +16,7 @@ class Interactive05 extends Simulation {
     println(s"Total test duration ${params.testDuration} seconds")
   }
 
-  val csvFeeder: Iterator[Map[String, Any]] = csv("snb-iq05-params.csv").circular() //.random()
+  val csvFeeder: Iterator[Map[String, Any]] = csv("snb-iq05-params.csv").random()
 
   val httpProtocol: HttpProtocolBuilder =
     http
