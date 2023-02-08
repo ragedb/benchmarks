@@ -1,6 +1,60 @@
- local person_id = "9479"
+ local person_id = "13194139542834"
+ local max_date = 1324080000000
+ local maxDate_double = maxDate / 1000.0
 
     local node_id = NodeGetId("Person", person_id)
+    local friends = NodeGetNeighborIds(node_id, "KNOWS")
+    local friend_of_friends = NodeIdsGetNeighborIds(friends, "KNOWS")
+    -- Store the unique friends and friends of friends in a map
+    local otherPerson = Roar.new()
+    otherPerson:addIds(friends)
+    otherPerson:addValues(friend_of_friends)
+    -- Remove original person from friends and fof list
+    otherPerson:remove(node_id)
+
+    local otherPerson_messages = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
+    local messages = Roar.new()
+    messages:addValues(otherPerson_messages)
+    local latest = FilterNodes(comment_ids:getIds(), "Message", "creationDate", Operation.LT, maxDate_double, 0, 20, Sort.DESC)
+
+    local results = {}
+    for i = 1, #latest do
+        local msg_properties = latest[i]:getProperties()
+        local author = NodeGetNeighbors(latest[i], Direction.OUT, "HAS_CREATOR")[1]
+        local author_props = author:getProperties()
+        local result = {
+           ["otherPerson.id"] = author_props["id"],
+           ["otherPerson.firstName"] = author_props["firstName"],
+           ["otherPerson.lastName"] = author_props["lastName"],
+           ["message.creationDate"] = DateToISO(msg_properties["creationDate"]),
+           ["message.id"] = msg_properties["id"],
+        }
+        if (msg_properties["content"] == '') then
+           result["message.imageFile"] = msg_properties["imageFile"]
+        else
+           result["message.content"] = msg_properties["content"]
+        end
+
+       table.insert(results, result)
+    end
+
+      table.sort(results, function(a, b)
+          local adate = a["message.creationDate"]
+          local bdate = b["message.creationDate"]
+          if adate > bdate then
+              return true
+          end
+          if (adate == bdate) then
+              return (a["message.id"] < b["comment.id"] )
+          end
+      end)
+
+results
+
+
+
+
+
     local created = NodeGetNeighborIds(node_id, Direction.IN, "HAS_CREATOR")
     local messages = Roar.new()
     messages:addIds(created)

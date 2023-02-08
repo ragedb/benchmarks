@@ -720,6 +720,58 @@ ldbc_snb_iq08 = function(person_id)
 end
 
 -- Interactive Query 9
+ldbc_snb_iq09 = function(person_id, max_date)
+    local maxDate_double = max_date / 1000.0
+
+    local node_id = NodeGetId("Person", person_id)
+    local friends = NodeGetNeighborIds(node_id, "KNOWS")
+    local friend_of_friends = NodeIdsGetNeighborIds(friends, "KNOWS")
+    -- Store the unique friends and friends of friends in a map
+    local otherPerson = Roar.new()
+    otherPerson:addIds(friends)
+    otherPerson:addValues(friend_of_friends)
+    -- Remove original person from friends and fof list
+    otherPerson:remove(node_id)
+
+    local otherPerson_messages = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
+    local messages = Roar.new()
+    messages:addValues(otherPerson_messages)
+    local latest = FilterNodes(messages:getIds(), "Message", "creationDate", Operation.LT, maxDate_double, 0, 20, Sort.DESC)
+
+    local results = {}
+    for i = 1, #latest do
+        local msg_properties = latest[i]:getProperties()
+        local author = NodeGetNeighbors(latest[i], Direction.OUT, "HAS_CREATOR")[1]
+        local author_props = author:getProperties()
+        local result = {
+           ["otherPerson.id"] = author_props["id"],
+           ["otherPerson.firstName"] = author_props["firstName"],
+           ["otherPerson.lastName"] = author_props["lastName"],
+           ["message.creationDate"] = DateToISO(msg_properties["creationDate"]),
+           ["message.id"] = msg_properties["id"],
+        }
+        if (msg_properties["content"] == '') then
+           result["message.imageFile"] = msg_properties["imageFile"]
+        else
+           result["message.content"] = msg_properties["content"]
+        end
+
+       table.insert(results, result)
+    end
+
+      table.sort(results, function(a, b)
+          local adate = a["message.creationDate"]
+          local bdate = b["message.creationDate"]
+          if adate > bdate then
+              return true
+          end
+          if (adate == bdate) then
+              return (a["message.id"] < b["comment.id"] )
+          end
+      end)
+
+    return results
+end
 
 -- Interactive Query 10
 
