@@ -1,98 +1,100 @@
-local person_id = "8796093030404"
-local min_date  = 1347062400000
+local person_id = "30786325583618"
+local firstName = "Chau"
 
-    local min_date_double = min_date / 1000.0
-    -- Find the person
     local node_id = NodeGetId("Person", person_id)
-    -- Find the friends and friends of friends
-    local friends = NodeGetNeighborIds(node_id, "KNOWS")
-    local friend_of_friends = NodeIdsGetNeighborIds(friends, "KNOWS")
+    local people = NodeGetNeighborIds(node_id, "KNOWS")
+    local seen1 = Roar.new()
 
-    local otherPerson = Roar.new()
-    otherPerson:addIds(friends)
-    for friend_id, fof_ids in pairs(friend_of_friends) do
-        otherPerson:addIds(fof_ids)
-    end
-    -- Remove original person from friends and fof list
-    otherPerson:remove(node_id)
-    -- 7ms
+    seen1:addIds(people)
+    local named1 = FilterNodes(seen1:getIds(), "Person", "firstName", Operation.EQ, firstName)
+    local named2 = {}
+    local named3 = {}
 
+    if(#named1 < 20) then
+      local seen2 = Roar.new()
 
-     -- This could be combined into a LinksGetLinksWithPredicate
+      local people2 = NodeIdsGetNeighborIds(people, "KNOWS")
+      for i,links in pairs(people2) do
+        seen2:addIds(links)
+      end
+      seen2:inplace_difference(seen1)
+      seen2:remove(node_id)
 
+      named2 = FilterNodes(seen2:getIds(), "Person", "firstName", Operation.EQ, firstName)
 
+      if((#named1 + #named2) < 20) then
 
-     --Find Forums that any Person otherPerson became a member of after a given date ($minDate).
-    local other_id_forum_links = LinksGetLinks(otherPerson:getNodeHalfLinks(), Direction.IN, "HAS_MEMBER")
-    local forum_rels = Roar.new()
-    for other_id, forum_links in pairs(other_id_forum_links) do
-        forum_rels:addRelationshipIds(forum_links)
-    end
-    -- 350ms
-        -- Only those after a certain date, side one of the triangle
-    local valid_memberships = FilterRelationshipIds(forum_rels:getIds(), "HAS_MEMBER", "joinDate", Operation.GT, min_date_double, 0, 10000000) -- 18218
-    -- 367ms
-
-
-    -- Instead of building all_valid_forums here, we could get the messages of each user and then use the forum per user to find the container of forum, then count
-
-
-    local membership_check = Roar.new()
-    membership_check:addIds(valid_memberships)
-
-    -- Get Valid forums
-    local valid_other_id_forum_ids = {}
-    local all_valid_forums = Roar.new()
-    for other_id, forum_links in pairs(other_id_forum_links) do
-        local valid_forums = {}
-        for i = 1, #forum_links do
-            if (membership_check:contains(forum_links[i]:getRelationshipId())) then
-                table.insert(valid_forums, forum_links[i]:getNodeId())
-            end
+        local seen3 = Roar.new()
+        local people3 = NodeIdsGetNeighborIds(seen2:getIds(), "KNOWS")
+        for i,links2 in pairs(people3) do
+            seen3:addIds(links2)
         end
-        table.sort(valid_forums)
-        valid_other_id_forum_ids[other_id:getNodeId()] = valid_forums
-        all_valid_forums:addIds(valid_forums)
+        seen3:inplace_difference(seen2)
+        seen3:inplace_difference(seen1)
+        seen3:remove(node_id)
+
+        named3 = FilterNodes(seen3:getIds(), "Person", "firstName", Operation.EQ, firstName)
+      end
     end
-    -- 550ms
 
+    local known = {}
+    local found = {named1, named2, named3}
 
-    local temp_ids = {}
-    local temp_count = 0
-    -- Get posts from other person, side two of the triangle
-    local forum_counts = {}
-    local other_person_message_ids = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
-    for other_id, message_ids in pairs(other_person_message_ids) do
-        temp_ids = other_id
-        local valid_other_id_messages = NodeIdsGetNeighborIds(message_ids, Direction.IN, "CONTAINER_OF", valid_other_id_forum_ids[other_id])
-        temp_count = temp_count + 1
-        for message_id, forum_ids in pairs(valid_other_id_messages) do
-             temp_count = temp_count + 1
-            forum_counts[forum_ids[1]] = (forum_counts[forum_ids[1]]  or 0) + 1
+    for i = 1, #found do
+      if (#found[i] > 0) then
+        for j, person in pairs(found[i]) do
+          local properties = person:getProperties()
+          otherPerson = {
+            ["otherPerson.id"] = properties["id"],
+            ["otherPerson.lastName"] = properties["lastName"],
+            ["otherPerson.birthday"] = properties["birthday"],
+            ["otherPerson.creationDate"] = properties["creationDate"],
+            ["otherPerson.gender"] = properties["gender"],
+            ["otherPerson.browserUsed"] = properties["browserUsed"],
+            ["otherPerson.locationIP"] = properties["locationIP"],
+            ["otherPerson.email"] = properties["email"],
+            ["otherPerson.speaks"] = properties["speaks"],
+            ["distanceFromPerson"] = i
+          }
+          table.insert(known, otherPerson)
         end
+      end
     end
 
+    function sort_on_values(t,...)
+      local a = {...}
+      table.sort(t, function (u,v)
+        for i = 1, #a do
+          if u[a[i]] > v[a[i]] then return false end
+          if u[a[i]] < v[a[i]] then return true end
+        end
+      end)
+    end
 
+    sort_on_values(known,"distanceFromPerson","otherPerson.lastName", "otherPerson.id")
+    local smaller = table.move(known, 1, 20, 1, {})
 
     local results = {}
-    for forum_id, post_count in pairs(forum_counts) do
-        table.insert(results, { ["forum.title"] = forum_id, ["postCount"] = post_count })
+    for j, person in pairs(smaller) do
+        local studied_list = {}
+        local worked_list = {}
+        local studied = NodeGetRelationships("Person", tostring(person["otherPerson.id"]), Direction.OUT, "STUDY_AT" )
+        local worked = NodeGetRelationships("Person", tostring(person["otherPerson.id"]), Direction.OUT, "WORK_AT" )
+
+        for s = 1, #studied do
+            table.insert(studied_list, NodeGetProperty(studied[s]:getEndingNodeId(), "name"))
+            table.insert(studied_list, RelationshipGetProperty(studied[s]:getId(), "classYear"))
+        end
+
+       for s = 1, #worked do
+          table.insert(worked_list, NodeGetProperty(worked[s]:getEndingNodeId(), "name"))
+          table.insert(worked_list, RelationshipGetProperty(worked[s]:getId(), "workFrom"))
+       end
+
+      person["universities"] = table.concat(studied_list, ", ")
+      person["companies"] = table.concat(worked_list, ", ")
+      person["otherPerson.creationDate"] = DateToISO(person["otherPerson.creationDate"])
+      table.insert(results, person)
     end
 
-    -- Sort whatever is left by total count desc and id ascending
-    table.sort(results, function(a, b)
-      if a["postCount"] > b["postCount"] then
-          return true
-      end
-      if (a["postCount"] == b["postCount"]) then
-          return (a["forum.title"] < b["forum.title"] )
-      end
-    end)
-
-    local smaller = table.move(results, 1, 20, 1, {})
-
-    for i = 1, #smaller do
-      smaller[i]["forum.title"] = NodeGetProperty(smaller[i]["forum.title"], "title")
-    end
-
-smaller
+results

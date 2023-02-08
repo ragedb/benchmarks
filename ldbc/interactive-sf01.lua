@@ -3,33 +3,30 @@
 ldbc_snb_iq01 = function(person_id, firstName)
 
     local node_id = NodeGetId("Person", person_id)
-    local people = NodeGetLinks(node_id, "KNOWS")
+    local people = NodeGetNeighborIds(node_id, "KNOWS")
     local seen1 = Roar.new()
 
-    seen1:addNodeIds(people)
+    seen1:addIds(people)
     local named1 = FilterNodes(seen1:getIds(), "Person", "firstName", Operation.EQ, firstName)
     local named2 = {}
     local named3 = {}
+    local temp_count = 0
 
-    if(#named1 < 20) then 
+    if(#named1 < 20) then
       local seen2 = Roar.new()
 
-      local people2 = LinksGetLinks(people, "KNOWS")
-      for i,links in pairs(people2) do 
-        seen2:addNodeIds(links)
-      end  
+      local people2 = NodeIdsGetNeighborIds(people, "KNOWS")
+      seen2:addValues(people2)
       seen2:inplace_difference(seen1)
       seen2:remove(node_id)
 
       named2 = FilterNodes(seen2:getIds(), "Person", "firstName", Operation.EQ, firstName)
 
-      if((#named1 + #named2) < 20) then 
+      if((#named1 + #named2) < 20) then
 
         local seen3 = Roar.new()
-        local people3 = LinksGetLinks(seen2:getNodeHalfLinks(), "KNOWS") 
-        for i,links2 in pairs(people3) do 
-            seen3:addNodeIds(links2) 
-        end
+        local people3 = NodeIdsGetNeighborIds(seen2:getIds(), "KNOWS")
+        seen3:addValues(people3)
         seen3:inplace_difference(seen2)
         seen3:inplace_difference(seen1)
         seen3:remove(node_id)
@@ -46,6 +43,7 @@ ldbc_snb_iq01 = function(person_id, firstName)
         for j, person in pairs(found[i]) do
           local properties = person:getProperties()
           otherPerson = {
+            ["node_id"] = person:getId(),
             ["otherPerson.id"] = properties["id"],
             ["otherPerson.lastName"] = properties["lastName"],
             ["otherPerson.birthday"] = properties["birthday"],
@@ -77,24 +75,26 @@ ldbc_snb_iq01 = function(person_id, firstName)
 
     local results = {}
     for j, person in pairs(smaller) do
+        local person_id = person["node_id"]
         local studied_list = {}
-        local worked_list = {} 
-        local studied = NodeGetRelationships("Person", tostring(person["otherPerson.id"]), Direction.OUT, "STUDY_AT" )
-        local worked = NodeGetRelationships("Person", tostring(person["otherPerson.id"]), Direction.OUT, "WORK_AT" )
-     
+        local worked_list = {}
+        local studied = NodeGetRelationships(person_id, Direction.OUT, "STUDY_AT" )
+        local worked = NodeGetRelationships(person_id, Direction.OUT, "WORK_AT" )
+
         for s = 1, #studied do
             table.insert(studied_list, NodeGetProperty(studied[s]:getEndingNodeId(), "name"))
-            table.insert(studied_list, RelationshipGetProperty(studied[s]:getId(), "classYear"))
+            table.insert(studied_list, studied[s]:getProperty("classYear"))
         end
-        
+
        for s = 1, #worked do
           table.insert(worked_list, NodeGetProperty(worked[s]:getEndingNodeId(), "name"))
-          table.insert(worked_list, RelationshipGetProperty(worked[s]:getId(), "workFrom"))
+          table.insert(worked_list, worked[s]:getProperty("workFrom"))
        end
-      
+
       person["universities"] = table.concat(studied_list, ", ")
       person["companies"] = table.concat(worked_list, ", ")
       person["otherPerson.creationDate"] = DateToISO(person["otherPerson.creationDate"])
+      person["node_id"] = nil
       table.insert(results, person)
     end
 
@@ -561,26 +561,63 @@ end
 
 -- Interactive Query 6
 ldbc_snb_iq06 = function(person_id, tagName)
+    -- Get the tag, person and their friends and friends of friends
     local tag_id = FindNodeIds("Tag", "name", Operation.EQ, tagName, 0, 1)[1]
     local node_id = NodeGetId("Person", person_id)
     local friends = NodeGetNeighborIds(node_id, "KNOWS")
-    local friend_of_friends = NodeIdsGetNeighborIds(friends)
+    local friend_of_friends = NodeIdsGetNeighborIds(friends, "KNOWS")
 
+    -- Collect friends and fofs
     local otherPerson = Roar.new()
-    otherPerson:addNodeIds(friends)
+    otherPerson:addIds(friends)
     for friend_id, fof_ids in pairs(friend_of_friends) do
-        otherPerson:addNodeIds(fof_ids)
+        otherPerson:addIds(fof_ids)
     end
-    otherPerson.remove(node_id)
-    local all_post_links = LinksGetLinks(otherPerson:getNodeHalfLinks(), Direction.IN, "HAS_CREATOR")
-    for otherPerson_link, post_links in pairs(all_post_links) do
-    --todo check for post vs comments
+    -- Remove starting person
+    otherPerson:remove(node_id)
 
+    -- From the starting tag, get all the posts
+    local tagged_post_ids = NodeGetNeighborIds(tag_id, Direction.IN, "HAS_TAG")
 
+    -- From these posts, get all the creators that are our friends and fofs
+    local posts_creator_ids = NodeIdsGetNeighborIds(tagged_post_ids, Direction.OUT, "HAS_CREATOR", otherPerson:getIds())
+
+    -- Collect the tagged posts of our friends and fofs
+    local valid_posts = Roar.new()
+    for post_id, _ in pairs(posts_creator_ids) do
+        valid_posts:add(post_id)
     end
-    --todo:finish
+
+    local post_counts = {}
+    local posts_tag_ids = NodeIdsGetNeighborIds(valid_posts:getIds(), Direction.OUT, "HAS_TAG")
+    for post_id, tag_ids in pairs(posts_tag_ids) do
+        for i = 1, #tag_ids do
+            post_counts[tag_ids[i]] = (post_counts[tag_ids[i]] or 0) + 1
+        end
+    end
+    -- Do not count starting tag
+    post_counts[tag_id] = nil
+
     local results = {}
-    local smaller = table.move(results, 1, 20, 1, {})
+    for tag_id, post_count in pairs (post_counts) do
+        table.insert(results, {["otherTag.name"] = tag_id, ["postCount"] = post_count})
+    end
+
+    -- Sort whatever is left by total count desc and id ascending
+    table.sort(results, function(a, b)
+      if a["postCount"] > b["postCount"] then
+          return true
+      end
+      if (a["postCount"] == b["postCount"]) then
+          return (a["otherTag.name"] < b["otherTag.name"] )
+      end
+    end)
+
+    local smaller = table.move(results, 1, 10, 1, {})
+
+    for i = 1, #smaller do
+      smaller[i]["otherTag.name"] = NodeGetProperty(smaller[i]["otherTag.name"], "name")
+    end
     return smaller
 end
 
