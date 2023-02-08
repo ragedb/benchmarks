@@ -678,6 +678,46 @@ ldbc_snb_iq07 = function(person_id)
 end
 
 -- Interactive Query 8
+ldbc_snb_iq08 = function(person_id)
+    local node_id = NodeGetId("Person", person_id)
+    local created = NodeGetNeighborIds(node_id, Direction.IN, "HAS_CREATOR")
+    local messages = Roar.new()
+    messages:addIds(created)
+    local message_replies = NodeIdsGetNeighborIds(messages:getIds(), Direction.IN, "REPLY_OF")
+    local comment_ids = Roar.new()
+    comment_ids:addValues(message_replies)
+    local latest = FilterNodes(comment_ids:getIds(), "Message", "creationDate", Operation.GT, 0.0, 0, 20, Sort.DESC)
+
+    local results = {}
+    for i = 1, #latest do
+        local msg_properties = latest[i]:getProperties()
+        local author = NodeGetNeighbors(latest[i], Direction.OUT, "HAS_CREATOR")[1]
+        local author_props = author:getProperties()
+        local result = {
+           ["commentAuthor.id"] = author_props["id"],
+           ["commentAuthor.firstName"] = author_props["firstName"],
+           ["commentAuthor.lastName"] = author_props["lastName"],
+           ["comment.creationDate"] = DateToISO(msg_properties["creationDate"]),
+           ["comment.id"] = msg_properties["id"],
+           ["comment.content"] = msg_properties["content"]
+
+        }
+       table.insert(results, result)
+    end
+
+      table.sort(results, function(a, b)
+          local adate = a["comment.creationDate"]
+          local bdate = b["comment.creationDate"]
+          if adate > bdate then
+              return true
+          end
+          if (adate == bdate) then
+              return (a["comment.id"] < b["comment.id"] )
+          end
+      end)
+
+    return results
+end
 
 -- Interactive Query 9
 

@@ -1,53 +1,39 @@
- local person_id = "6597069777240"
+ local person_id = "9479"
 
     local node_id = NodeGetId("Person", person_id)
-    local people = NodeGetNeighborIds(node_id, "KNOWS")
-    local friends = Roar.new()
-    friends:addIds(people)
-
     local created = NodeGetNeighborIds(node_id, Direction.IN, "HAS_CREATOR")
     local messages = Roar.new()
     messages:addIds(created)
-    local message_likes = LinksGetLinks(messages:getNodeHalfLinks(), Direction.IN, "LIKES")
-    local rels = Roar.new()
-    for message_link, likes_links in pairs(message_likes) do
-        for i = 1, #likes_links do
-            rels:add(likes_links[i]:getRelationshipId())
-        end
-    end
-    local liked_rels = FilterRelationships(rels:getIds(), "LIKES", "creationDate", Operation.GT, 0.0, 0, 20, Sort.DESC)
+    local message_replies = NodeIdsGetNeighborIds(messages:getIds(), Direction.IN, "REPLY_OF")
+    local comment_ids = Roar.new()
+    comment_ids:addValues(message_replies)
+    local latest = FilterNodes(comment_ids:getIds(), "Message", "creationDate", Operation.GT, 0.0, 0, 20, Sort.DESC)
+
     local results = {}
-    for i = 1, #liked_rels do
-        local friend_id = liked_rels[i]:getStartingNodeId()
-        local friend_properties = NodeGetProperties(friend_id)
-        local message_id = liked_rels[i]:getEndingNodeId()
-        local msg_properties = NodeGetProperties(message_id)
-        local liked_time = liked_rels[i]:getProperty("creationDate")
+    for i = 1, #latest do
+        local msg_properties = latest[i]:getProperties()
+        local author = NodeGetNeighbors(latest[i], Direction.OUT, "HAS_CREATOR")[1]
+        local author_props = author:getProperties()
         local result = {
-           ["friend.id"] = friend_properties["id"],
-           ["friend.firstName"] = friend_properties["firstName"],
-           ["friend.lastName"] = friend_properties["lastName"],
-           ["likes.creationDate"] = DateToISO(liked_time),
-           ["message.id"] = msg_properties["id"],
-           ["minutesLatency"] = math.floor(((liked_time - msg_properties["creationDate"]) / 60) + 0.5),
-           ["isNew"] = friends:contains(friend_id)
+           ["commentAuthor.id"] = author_props["id"],
+           ["commentAuthor.firstName"] = author_props["firstName"],
+           ["commentAuthor.lastName"] = author_props["lastName"],
+           ["comment.creationDate"] = DateToISO(msg_properties["creationDate"]),
+           ["comment.id"] = msg_properties["id"],
+           ["comment.content"] = msg_properties["content"]
+
         }
-       if (msg_properties["content"] == '') then
-           result["message.imageFile"] = msg_properties["imageFile"]
-       else
-           result["message.content"] = msg_properties["content"]
-       end
        table.insert(results, result)
     end
 
       table.sort(results, function(a, b)
-          local adate = a["likes.creationDate"]
-          local bdate = b["likes.creationDate"]
+          local adate = a["comment.creationDate"]
+          local bdate = b["comment.creationDate"]
           if adate > bdate then
               return true
           end
           if (adate == bdate) then
-              return (a["friend.id"] < b["friend.id"] )
+              return (a["comment.id"] < b["comment.id"] )
           end
       end)
 
