@@ -622,6 +622,60 @@ ldbc_snb_iq06 = function(person_id, tagName)
 end
 
 -- Interactive Query 7
+ldbc_snb_iq07 = function(person_id)
+    local node_id = NodeGetId("Person", person_id)
+    local people = NodeGetNeighborIds(node_id, "KNOWS")
+    local friends = Roar.new()
+    friends:addIds(people)
+
+    local created = NodeGetNeighborIds(node_id, Direction.IN, "HAS_CREATOR")
+    local messages = Roar.new()
+    messages:addIds(created)
+    local message_likes = LinksGetLinks(messages:getNodeHalfLinks(), Direction.IN, "LIKES")
+    local rels = Roar.new()
+    for message_link, likes_links in pairs(message_likes) do
+        for i = 1, #likes_links do
+            rels:add(likes_links[i]:getRelationshipId())
+        end
+    end
+    local liked_rels = FilterRelationships(rels:getIds(), "LIKES", "creationDate", Operation.GT, 0.0, 0, 20, Sort.DESC)
+    local results = {}
+    for i = 1, #liked_rels do
+        local friend_id = liked_rels[i]:getStartingNodeId()
+        local friend_properties = NodeGetProperties(friend_id)
+        local message_id = liked_rels[i]:getEndingNodeId()
+        local msg_properties = NodeGetProperties(message_id)
+        local liked_time = liked_rels[i]:getProperty("creationDate")
+        local result = {
+           ["friend.id"] = friend_properties["id"],
+           ["friend.firstName"] = friend_properties["firstName"],
+           ["friend.lastName"] = friend_properties["lastName"],
+           ["likes.creationDate"] = DateToISO(liked_time),
+           ["message.id"] = msg_properties["id"],
+           ["minutesLatency"] = math.floor(((liked_time - msg_properties["creationDate"]) / 60) + 0.5),
+           ["isNew"] = friends:contains(friend_id)
+        }
+       if (msg_properties["content"] == '') then
+           result["message.imageFile"] = msg_properties["imageFile"]
+       else
+           result["message.content"] = msg_properties["content"]
+       end
+       table.insert(results, result)
+    end
+
+      table.sort(results, function(a, b)
+          local adate = a["likes.creationDate"]
+          local bdate = b["likes.creationDate"]
+          if adate > bdate then
+              return true
+          end
+          if (adate == bdate) then
+              return (a["friend.id"] < b["friend.id"] )
+          end
+      end)
+
+    return results
+end
 
 -- Interactive Query 8
 
