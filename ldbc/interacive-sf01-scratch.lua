@@ -1,3 +1,20 @@
+
+
+    local node_id = NodeGetId("Person", person_id)
+    local friends = NodeGetNeighborIds(node_id, "KNOWS")
+    local friend_of_friends = NodeIdsGetNeighborIds(friends, "KNOWS")
+    -- Store the unique friends and friends of friends in a map
+    local otherPerson = Roar.new()
+    otherPerson:addIds(friends)
+    otherPerson:addValues(friend_of_friends)
+    -- Remove original person from friends and fof list
+    otherPerson:remove(node_id)
+
+
+
+
+
+
  local person_id = "13194139542834"
  local max_date = 1324080000000
  local maxDate_double = maxDate / 1000.0
