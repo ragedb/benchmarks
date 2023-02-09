@@ -858,6 +858,104 @@ ldbc_snb_iq11 = function(person_id, country_name, workFromYear)
 end
 
 -- Interactive Query 12
+ldbc_snb_iq12 = function(person_id, tag_class_name)
+    -- Get the person and their friends
+    local node_id = NodeGetId("Person", person_id)
+    local friends = NodeGetNeighborIds(node_id, "KNOWS")
+
+    -- Get the TagClass
+    local tag_class_id = FindNodeIds("TagClass", "name", Operation.EQ, tag_class_name, 0, 1)[1]
+    -- Loop until we get all the sub classes
+    local all_tag_class_ids = Roar.new()
+    all_tag_class_ids:add(tag_class_id)
+    local cardinality = 0
+    while (all_tag_class_ids:cardinality() > cardinality) do
+        cardinality = all_tag_class_ids:cardinality()
+        local sub_class_ids = NodeIdsGetNeighborIds(all_tag_class_ids:getIds(), Direction.IN, "IS_SUBCLASS_OF")
+        all_tag_class_ids:addValues(sub_class_ids)
+    end
+
+    -- Get the Tags
+    local tag_ids = NodeIdsGetNeighborIds(all_tag_class_ids:getIds(), Direction.IN, "HAS_TYPE")
+    local all_tag_ids = Roar.new()
+    all_tag_ids:addValues(tag_ids)
+
+    -- Get the messages of the friends
+    local friend_messages = NodeIdsGetNeighborIds(friends, Direction.IN, "HAS_CREATOR")
+    local reverse_message_friend = {}
+    for friend_id, message_ids in pairs(friend_messages) do
+        for i = 1, #message_ids do
+            reverse_message_friend[message_ids[i]] = friend_id
+        end
+    end
+
+    local all_messages = Roar.new()
+    all_messages:addValues(friend_messages)
+    -- Get the posts of all the messages
+    local comment_posts = NodeIdsGetNeighborIds(all_messages:getIds(), Direction.OUT, "REPLY_OF")
+    local reverse_comment_posts = {}
+    for comment_id, post_ids in pairs(comment_posts) do
+        if (#post_ids > 0) then
+            reverse_comment_posts[post_ids[1]] = comment_id
+        end
+    end
+    -- Get the tags of all the posts that match
+    local all_posts = Roar.new()
+    all_posts:addValues(comment_posts)
+
+    local valid_posts = NodeIdsGetNeighborIds(all_posts:getIds(), Direction.OUT, "HAS_TAG", all_tag_ids:getIds())
+
+    local valid_friends = Roar.new()
+    local results_count = {}
+    local results_tags = {}
+    for post_id, tag_ids in pairs(valid_posts) do
+        if (#tag_ids > 0) then
+            local friend_id = reverse_message_friend[reverse_comment_posts[post_id]]
+            valid_friends:add(friend_id)
+             results_count[friend_id] = (results_count[friend_id] or 0) + 1
+             results_tags[friend_id] = (results_tags[friend_id] or {})
+             for i = 1, #tag_ids do
+                table.insert(results_tags[friend_id], tag_ids[i])
+             end
+        end
+    end
+
+    local friend_ids = NodeIdsGetProperty(valid_friends:getIds(), "id")
+    local results = {}
+    for friend_id, count in pairs(results_count) do
+        table.insert(results, {["replyCount"] = count, ["friend.id"] = friend_ids[friend_id], ["friend.node_id"] = friend_id})
+    end
+
+    -- Sort whatever is left by total count desc and id ascending
+    table.sort(results, function(a, b)
+      if a["replyCount"] > b["replyCount"] then
+          return true
+      end
+      if (a["replyCount"] == b["replyCount"]) then
+          return (a["friend.id"] < b["friend.id"] )
+      end
+    end)
+
+    local smaller = table.move(results, 1, 20, 1, {})
+
+
+    local ids = {}
+    for i = 1, #smaller do
+      smaller[i]["friend.firstName"] = NodeGetProperty(smaller[i]["friend.node_id"], "firstName")
+      smaller[i]["friend.lastName"] = NodeGetProperty(smaller[i]["friend.node_id"], "lastName")
+      local result_tag_ids = Roar.new()
+      ids = results_tags[ smaller[i]["friend.node_id"] ]
+      result_tag_ids:addIds(ids)
+      local table_names = {}
+      for tag_id, name in pairs(NodeIdsGetProperty(result_tag_ids:getIds(), "name")) do
+        table.insert(table_names, name)
+      end
+      smaller[i]["tagNames"] = table.concat(table_names, ", ")
+      smaller[i]["friend.node_id"] = nil
+    end
+
+    return smaller
+end
 
 -- Interactive Query 13
 
