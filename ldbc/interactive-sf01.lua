@@ -776,6 +776,86 @@ end
 -- Interactive Query 10
 
 -- Interactive Query 11
+ldbc_snb_iq11 = function(person_id, country_name, workFromYear)
+    local node_id = NodeGetId("Person", person_id)
+    local friends = NodeGetNeighborIds(node_id, "KNOWS")
+    local friend_of_friends = NodeIdsGetNeighborIds(friends, "KNOWS")
+    -- Store the unique friends and friends of friends in a map
+    local otherPerson = Roar.new()
+    otherPerson:addIds(friends)
+    otherPerson:addValues(friend_of_friends)
+    -- Remove original person from friends and fof list
+    otherPerson:remove(node_id)
+
+    -- Get the country and the companies in that country (we unfortunately get messages as well due to a weird model)
+    local country_id = FindNodeIds("Place", "name", Operation.EQ, country_name, 0, 1)[1]
+    local company_ids = NodeGetNeighborIds(country_id, Direction.IN, "IS_LOCATED_IN") -- gets companies and messages
+    --local company_ids = NodeGetNeighborIds(country_id, Direction.IN, "ORG_IS_LOCATED_IN") -- gets just companies, but requires updating the schema
+    local companies = Roar.new()
+    companies:addIds(company_ids)
+
+    local company_id_other_ids = NodeIdsGetNeighborIds(company_ids, Direction.IN, "WORK_AT", otherPerson:getIds())
+    local valid_others = Roar.new()
+    valid_others:addValues(company_id_other_ids)
+
+
+    local work_at_links = LinksGetLinks(valid_others:getNodeHalfLinks(), Direction.OUT, "WORK_AT")
+    local work_at_rels = Roar.new()
+    for other_id, links in pairs(work_at_links) do
+        for i = 1, #links do
+            work_at_rels:add(links[i]:getRelationshipId())
+        end
+    end
+
+    local valid_work_at_rels = FilterRelationships(work_at_rels:getIds(), "WORK_AT", "workFrom", Operation.LT, workFromYear, 0, 10000000, Sort.ASC)
+    local valid_other_ids = Roar.new()
+    local valid_company_ids = Roar.new()
+    for i = 1, #valid_work_at_rels do
+        valid_other_ids:add(valid_work_at_rels[i]:getStartingNodeId())
+        valid_company_ids:add(valid_work_at_rels[i]:getEndingNodeId())
+    end
+
+    local other_id_ids = NodeIdsGetProperty(valid_other_ids:getIds(), "id")
+    local company_id_names = NodeIdsGetProperty(valid_company_ids:getIds(), "name")
+
+    --Optimization keep track of top-k
+    local results = {}
+    for i = 1, #valid_work_at_rels do
+            local result = {
+               ["otherPerson.id"] = other_id_ids[valid_work_at_rels[i]:getStartingNodeId()],
+               ["workAt.workFrom"] = valid_work_at_rels[i]:getProperty("workFrom"),
+               ["company.name"] = company_id_names[valid_work_at_rels[i]:getEndingNodeId()]
+            }
+           table.insert(results, result)
+    end
+
+    table.sort(results, function(a, b)
+      local adate = a["workAt.workFrom"]
+      local bdate = b["workAt.workFrom"]
+      if adate < bdate then
+          return true
+      end
+      if (adate == bdate) then
+        local amessage_id = a["otherPerson.id"]
+        local bmessage_id = b["otherPerson.id"]
+        if  amessage_id < bmessage_id then
+            return true
+        end
+        if (amessage_id == bmessage_id) then
+            return (a["company.name"] < b["company.name"] )
+        end
+      end
+    end)
+
+    local smaller = table.move(results, 1, 10, 1, {})
+
+    for i = 1, #smaller do
+      smaller[i]["otherPerson.firstName"] = NodeGetProperty("Person", tostring(smaller[i]["otherPerson.id"]), "firstName")
+      smaller[i]["otherPerson.lastName"] = NodeGetProperty("Person", tostring(smaller[i]["otherPerson.id"]), "lastName")
+    end
+
+    return smaller
+end
 
 -- Interactive Query 12
 
