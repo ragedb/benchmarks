@@ -1,5 +1,108 @@
     local person_id = "17592186052613"
     local tag_class_name = "BasketballPlayer"
+
+    person_id = "4398046513906"
+    tag_class_name = "Chancellor"
+
+    -- Get the person and their friends
+    local node_id = NodeGetId("Person", person_id)
+    local friends = NodeGetNeighborIds(node_id, "KNOWS")
+    table.sort(friends)
+
+    -- Get the TagClass
+    local tag_class_id = FindNodeIds("TagClass", "name", Operation.EQ, tag_class_name, 0, 1)[1]
+    -- Loop until we get all the sub classes
+    local all_tag_class_ids = Roar.new()
+    all_tag_class_ids:add(tag_class_id)
+    local cardinality = 0
+    while (all_tag_class_ids:cardinality() > cardinality) do
+        cardinality = all_tag_class_ids:cardinality()
+        local sub_class_ids = NodeIdsGetNeighborIds(all_tag_class_ids:getIds(), Direction.IN, "IS_SUBCLASS_OF")
+        all_tag_class_ids:addValues(sub_class_ids)
+    end
+
+    -- Get the Tags
+    local tag_ids = NodeIdsGetNeighborIds(all_tag_class_ids:getIds(), Direction.IN, "HAS_TYPE")
+    local all_tag_ids = Roar.new()
+    all_tag_ids:addValues(tag_ids)
+
+    -- Get the Posts
+    local tag_posts = NodeIdsGetNeighborIds(all_tag_ids:getIds(), Direction.IN, "HAS_TAG")
+    local all_posts = Roar.new()
+    all_posts:addValues(tag_posts)
+
+    -- Get the comments of all the messages
+    local posts_comments = NodeIdsGetNeighborIds(all_posts:getIds(), Direction.IN, "REPLY_OF")
+    local all_comments = Roar.new()
+    all_comments:addValues(posts_comments)
+
+    -- Get the messages of the friends backwards
+    local comment_friends = NodeIdsGetNeighborIds(all_comments:getIds(), Direction.OUT, "HAS_CREATOR", friends)
+
+    local valid_friends = Roar.new()
+    local results_count = {}
+    local results_tags = {}
+    for tag_id, post_ids in pairs(tag_posts) do
+        for i = 1, #post_ids do
+            local comments = posts_comments[post_ids[i]]
+            for j = 1, #comments do
+                local friend_id = comment_friends[comments[j]]
+                if (friend_id) then
+                    if (#friend_id > 0) then
+                        friend_id = friend_id[1]
+                        valid_friends:add(friend_id)
+                        results_count[friend_id] = (results_count[friend_id] or 0) + 1
+                        results_tags[friend_id] = (results_tags[friend_id] or {})
+                        table.insert(results_tags[friend_id], tag_id)
+                    end
+                end
+            end
+
+        end
+    end
+
+    local friend_ids = NodeIdsGetProperty(valid_friends:getIds(), "id")
+    local results = {}
+    for friend_id, count in pairs(results_count) do
+        table.insert(results, {["replyCount"] = count, ["friend.id"] = friend_ids[friend_id], ["friend.node_id"] = friend_id})
+    end
+
+    -- Sort whatever is left by total count desc and id ascending
+    table.sort(results, function(a, b)
+      if a["replyCount"] > b["replyCount"] then
+          return true
+      end
+      if (a["replyCount"] == b["replyCount"]) then
+          return (a["friend.id"] < b["friend.id"] )
+      end
+    end)
+
+    local smaller = table.move(results, 1, 20, 1, {})
+
+
+    local ids = {}
+    for i = 1, #smaller do
+      smaller[i]["friend.firstName"] = NodeGetProperty(smaller[i]["friend.node_id"], "firstName")
+      smaller[i]["friend.lastName"] = NodeGetProperty(smaller[i]["friend.node_id"], "lastName")
+      local result_tag_ids = Roar.new()
+      ids = results_tags[ smaller[i]["friend.node_id"] ]
+      result_tag_ids:addIds(ids)
+      local table_names = {}
+      for tag_id, name in pairs(NodeIdsGetProperty(result_tag_ids:getIds(), "name")) do
+        table.insert(table_names, name)
+      end
+      smaller[i]["tagNames"] = table.concat(table_names, ", ")
+      smaller[i]["friend.node_id"] = nil
+    end
+
+smaller
+
+
+
+
+
+    local person_id = "17592186052613"
+    local tag_class_name = "BasketballPlayer"
     -- Get the person and their friends
     local node_id = NodeGetId("Person", person_id)
     local friends = NodeGetNeighborIds(node_id, "KNOWS")
