@@ -1,3 +1,324 @@
+function calculate_weight(num_interactions)
+    if (num_interactions > 0) then
+        local integer, fraction = math.modf(40 - math.sqrt(num_interactions) + 0.5)
+        return math.max(integer, 1)
+    end
+    return 0
+end
+
+-- Takes 10 minutes:
+function calculate_weight(num_interactions)
+    if (num_interactions > 0) then
+        local integer, fraction = math.modf(40 - math.sqrt(num_interactions) + 0.5)
+        return math.max(integer, 1)
+    end
+    return 0
+end
+
+
+-- Instead of scanning down all people, we'll scan all KNOWS relationships
+local skip = 0
+local all_knows = AllRelationships("KNOWS", skip, 1000)
+
+local rels = Roar.new()
+
+while (#all_knows > 0) do
+    local posts_cache = {}
+    local reply_cache = {}
+    for i = 1, #all_knows do
+        local person1_id = all_knows[i]:getStartingNodeId()
+        local person2_id = all_knows[i]:getEndingNodeId()
+
+        local person1_posts = posts_cache[person1_id]
+        if (person1_posts == nil) then
+            person1_posts = Roar.new()
+            person1_posts:addIds(NodeGetNeighborIds(person1_id, Direction.IN, "HAS_CREATOR"))
+            posts_cache[person1_id] = person1_posts
+        end
+
+        local person2_posts = posts_cache[person2_id]
+        if (person2_posts == nil) then
+            person2_posts = Roar.new()
+            person2_posts:addIds(NodeGetNeighborIds(person2_id, Direction.IN, "HAS_CREATOR"))
+            posts_cache[person2_id] = person2_posts
+        end
+
+        local person1_replies = reply_cache[person1_id]
+        if (person1_replies == nil) then
+            person1_replies = Roar.new()
+            person1_replies:addValues(NodeIdsGetNeighborIds(person1_posts:getIds(), Direction.OUT, "REPLY_OF"))
+            reply_cache[person1_id] = person1_replies
+        end
+
+        local person2_replies = reply_cache[person2_id]
+        if (person2_replies == nil) then
+            person2_replies = Roar.new()
+            person2_replies:addValues(NodeIdsGetNeighborIds(person2_posts:getIds(), Direction.OUT, "REPLY_OF"))
+            reply_cache[person2_id] = person2_replies
+        end
+
+
+        local reply_count =  0 + (person1_posts:intersection(person2_replies)):cardinality() + (person2_posts:intersection(person1_replies)):cardinality()
+        if (reply_count > 0) then
+            local weight = calculate_weight(reply_count)
+            RelationshipSetProperty(all_knows[i]:getId(), "weight", weight)
+            rels:add(all_knows[i]:getId())
+        end
+    end
+
+    -- Get the next batch
+    posts_cache = {}
+    skip = skip + 1000
+    all_knows = AllRelationships("KNOWS", skip, 1000)
+end
+
+"done", rels:cardinality()
+
+-- Instead of scanning down all people, we'll scan all KNOWS relationships
+local skip = 0
+local all_knows = AllRelationships("KNOWS", skip, 1000)
+
+local rels = Roar.new()
+
+while (#all_knows > 0) do
+    local posts_cache = {}
+    local reply_cache = {}
+    for i = 1, #all_knows do
+        local person1_id = all_knows[i]:getStartingNodeId()
+        local person2_id = all_knows[i]:getEndingNodeId()
+
+        local person1_posts = posts_cache[person1_id]
+        if (person1_posts == nil) then
+            person1_posts = Roar.new()
+            person1_posts:addIds(NodeGetNeighborIds(person1_id, Direction.IN, "HAS_CREATOR"))
+            posts_cache[person1_id] = person1_posts
+        end
+
+        local person2_posts = posts_cache[person2_id]
+        if (person2_posts == nil) then
+            person2_posts = Roar.new()
+            person2_posts:addIds(NodeGetNeighborIds(person2_id, Direction.IN, "HAS_CREATOR"))
+            posts_cache[person2_id] = person2_posts
+        end
+
+        local person1_replies = reply_cache[person1_id]
+        if (person1_replies == nil) then
+            person1_replies = Roar.new()
+            person1_replies:addValues(NodeIdsGetNeighborIds(person1_posts:getIds(), Direction.OUT, "REPLY_OF"))
+            reply_cache[person1_id] = person1_replies
+        end
+
+        local person2_replies = reply_cache[person2_id]
+        if (person2_replies == nil) then
+            person2_replies = Roar.new()
+            person2_replies:addValues(NodeIdsGetNeighborIds(person2_posts:getIds(), Direction.OUT, "REPLY_OF"))
+            reply_cache[person2_id] = person2_replies
+        end
+
+        local reply_count =  0 + (person1_posts:intersection(person2_replies)):cardinality() + (person2_posts:intersection(person1_replies)):cardinality()
+        if (reply_count > 0) then
+            local weight = calculate_weight(reply_count)
+            RelationshipSetProperty(all_knows[i]:getId(), "weight", weight)
+            rels:add(all_knows[i]:getId())
+        end
+    end
+
+    -- Get the next batch
+    posts_cache = {}
+    skip = skip + 1000
+    all_knows = {} -- AllRelationships("KNOWS", skip, 1000)
+end
+
+"done", rels:cardinality()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-- Instead of scanning down all people, we'll scan all KNOWS relationships
+local skip = 0
+local all_knows = AllRelationships("KNOWS", skip, 1000)
+
+local rels = Roar.new()
+
+while (#all_knows > 0) do
+    local posts_cache = {}
+    for i = 1, #all_knows do
+        local person1_id = all_knows[i]:getStartingNodeId()
+        local person2_id = all_knows[i]:getEndingNodeId()
+
+        local person1_posts = posts_cache[person1_id]
+        if (person1_posts == nil) then
+            person1_posts = Roar.new()
+            person1_posts:addIds(NodeGetNeighborIds(person1_id, Direction.IN, "HAS_CREATOR"))
+            posts_cache[person1_id] = person1_posts
+        end
+
+
+        local person2_posts = posts_cache[person2_id]
+        if (person2_posts == nil) then
+            person2_posts = Roar.new()
+            person2_posts:addIds(NodeGetNeighborIds(person2_id, Direction.IN, "HAS_CREATOR"))
+            posts_cache[person2_id] = person2_posts
+        end
+
+        local person1_replies = NodeIdsGetNeighborIds(person1_posts:getIds(), Direction.OUT, "REPLY_OF", person2_posts:getIds())
+        local person2_replies = NodeIdsGetNeighborIds(person2_posts:getIds(), Direction.OUT, "REPLY_OF", person1_posts:getIds())
+
+        local reply_count =  0
+        for k, v in pairs(person1_replies) do
+           reply_count = reply_count + #v
+        end
+        for k, v in pairs(person2_replies) do
+           reply_count = reply_count + #v
+        end
+        if (reply_count > 0) then
+            --table.insert(temp_counts, reply_count)
+            local weight = calculate_weight(reply_count)
+            RelationshipSetProperty(all_knows[i]:getId(), "weight", weight)
+            rels:add(all_knows[i]:getId())
+        end
+    end
+
+    -- Get the next batch
+    posts_cache = {}
+    skip = skip + 1000
+    all_knows = {} -- AllRelationships("KNOWS", skip, 1000)
+end
+
+"done", rels:cardinality()
+
+
+local person1_id = "17592186055119"
+local person2_id = "8796093025131"
+
+-- Instead of scanning down all people, we'll scan all KNOWS relationships
+local skip = 0
+local all_knows = AllRelationships("KNOWS", skip, 1000)
+
+local rels = Roar.new()
+
+while (#all_knows > 0) do
+    local posts_cache = {}
+    for i = 1, #all_knows do
+        local person1_id = all_knows[i]:getStartingNodeId()
+        local person2_id = all_knows[i]:getEndingNodeId()
+
+        local person1_posts = posts_cache[person1_id]
+        if (person1_posts == nil) then
+             person1_posts = NodeGetNeighborIds(person1_id, Direction.IN, "HAS_CREATOR")
+            table.sort(person1_posts)
+            posts_cache[person1_id] = person1_posts
+        end
+
+
+        local person2_posts = posts_cache[person2_id]
+        if (person2_posts == nil) then
+             person2_posts = NodeGetNeighborIds(person2_id, Direction.IN, "HAS_CREATOR")
+            table.sort(person2_posts)
+            posts_cache[person2_id] = person2_posts
+        end
+
+        local person1_replies = NodeIdsGetNeighborIds(person1_posts, Direction.OUT, "REPLY_OF", person2_posts)
+        local person2_replies = NodeIdsGetNeighborIds(person2_posts, Direction.OUT, "REPLY_OF", person1_posts)
+
+        local reply_count =  0
+        for k, v in pairs(person1_replies) do
+           reply_count = reply_count + #v
+        end
+        for k, v in pairs(person2_replies) do
+           reply_count = reply_count + #v
+        end
+        if (reply_count > 0) then
+            --table.insert(temp_counts, reply_count)
+            local weight = calculate_weight(reply_count)
+            RelationshipSetProperty(all_knows[i]:getId(), "weight", weight)
+            rels:add(all_knows[i]:getId())
+        end
+    end
+
+    -- Get the next batch
+    posts_cache = {}
+    skip = skip + 1000
+    all_knows = {} -- AllRelationships("KNOWS", skip, 1000)
+end
+
+"done", rels:cardinality()
+
+
+function calculate_weight(num_interactions)
+    if (num_interactions > 0) then
+        local integer, fraction = math.modf(40 - math.sqrt(num_interactions) + 0.5)
+        return math.max(integer, 1)
+    end
+    return 0
+end
+
+local skip = 0
+local all_people = AllNodeIds("Person", skip, 1000)
+while (#all_people > 0) do
+    for i = 1, #all_people do
+        local node_id = all_people[i]
+        local friends = NodeGetLinks(node_id, "KNOWS")
+        local friend_ids = Roar.new()
+        friend_ids:addNodeIds(friends)
+        local posts = NodeGetNeighborIds(node_id, Direction.IN, "HAS_CREATOR")
+        table.sort(posts)
+        -- Get the author of the messages replied to that are friends
+        local replies = NodeIdsGetNeighborIds(posts, Direction.OUT, "REPLY_OF")
+        local reply_ids = Roar.new()
+        reply_ids:addValues(replies)
+        local authors = NodeIdsGetNeighborIds(reply_ids:getIds(), Direction.OUT, "HAS_CREATOR", friend_ids:getIds())
+        local replies_to_counts = {}
+        for reply_id, author_ids in pairs(authors) do
+            local friend_id = author_ids[1]
+            replies_to_counts[friend_id] = (replies_to_counts[friend_id] or 0) + 1
+        end
+        -- Get the friends that replied to my posts
+        local friend_posts = NodeIdsGetNeighborIds(friend_ids:getIds(), Direction.IN, "HAS_CREATOR")
+        local post_friend = {}
+        for friend_id, post_ids in pairs(friend_posts) do
+            for j = 1, #post_ids do
+                post_friend[post_ids[j]] = friend_id
+            end
+        end
+        local friend_post_ids = Roar.new()
+        friend_post_ids:addValues(friend_posts)
+        local post_replies = NodeIdsGetNeighborIds(friend_post_ids:getIds(), Direction.OUT, "REPLY_OF", posts)
+        for post_id, reply_ids in pairs(post_replies) do
+            local friend_id = post_friend[post_id]
+            replies_to_counts[friend_id] = (replies_to_counts[friend_id] or 0) + 1
+        end
+        for j = 1, #friends do
+            local rel_id = friends[j]:getRelationshipId()
+            local friend_id = friends[j]:getNodeId()
+            local weight = calculate_weight(replies_to_counts[friend_id] or 0)
+            RelationshipSetProperty(rel_id, "weight", weight)
+        end
+
+    end
+    -- Get the next batch
+    skip = skip + 1000
+    all_people = AllNodeIds("Person", skip, 1000)
+end
+
+
+
+
+
+
+
+
+
     local person_id = "17592186052613"
     local tag_class_name = "BasketballPlayer"
 
