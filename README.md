@@ -1,4 +1,39 @@
-# RageDB Benchmarks
+# RageDB Benchmarks for LDBC SNB
+
+This repository contains queries, test data and Gatling tests for the [LDBC](https://ldbcouncil.org/) [Social Network Benchmark](https://ldbcouncil.org/benchmarks/snb/).
+Watch ths [video](https://www.youtube.com/watch?v=q26DHnQFw54) for more information about the LDBC and their benchmarks.
+
+Currently only queries used in the "Interactive Workload" have been written. 
+You can read a paper on and get [the latest reference](https://ldbcouncil.org/ldbc_snb_docs/ldbc-snb-specification.pdf)
+
+The data model and queries presented here are based on version [2.2.2-SNAPSHOT, commit b2ee1ca](https://github.com/ldbc/ldbc_snb_docs).
+
+*IMPORTANT NOTE*: This is **NOT** an official LDBC Benchmark result.
+
+## Implementation Notes:
+
+The LDBC SNB data model is a logical data model and implementers are able to make tweaks to their physical data models.
+We will follow along with TuGraph and make the following changes:
+
+- Some relationships are further refined according to the connecting Node types:
+    - `HAS_TAG`: `FORUM_HAS_TAG`, `POST_HAS_TAG`, `COMMENT_HAS_TAG`
+    - `HAS_CREATOR`: `POST_HAS_CREATOR`, `COMMENT_HAS_CREATOR`
+    - `IS_LOCATED_IN`: `PERSON_IS_LOCATED_IN`, `ORGANISATION_IS_LOCATED_IN`, `POST_IS_LOCATED_IN`, `COMMENT_IS_LOCATED_IN`
+- There are two precomputed edge properties (similar to materialized views):
+    - `HAS_MEMBER.numPosts` which maintains the number of posts the given person posted in the given forum and used in Complex Read 5
+    - `KNOWS.weight` which maintains the weight between the pair of given persons, calculated using the formula in Complex Read 14
+
+## Running the Benchmark:
+
+- Get the data (more instructions TBD)
+- Install RageDB (more instructions TBD)
+- Run the schema.lua file
+- Run the import-sf01.lua file
+- Run the pre-process-sf01.lua file
+- Run the interactive-short-sf01.lua file to create the "stored" procedures for the short queries
+- Run the interactive-sf01.lua file to create the "stored" procedures for the complex queries
+- Run Gatling and select the test you wish to run
+
 
 ## Results:
 

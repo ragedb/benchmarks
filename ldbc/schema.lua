@@ -49,20 +49,35 @@ NodePropertyTypeAdd("TagClass", "name", "string")
 NodePropertyTypeAdd("TagClass", "url", "string")
 
 
-RelationshipTypeInsert("CONTAINER_OF")
-RelationshipTypeInsert("HAS_CREATOR")
-RelationshipTypeInsert("HAS_INTEREST")
+-- Modified Logical Relationship Types
+--RelationshipTypeInsert("IS_LOCATED_IN")
+RelationshipTypeInsert("ORGANISATION_IS_LOCATED_IN")
+RelationshipTypeInsert("PERSON_IS_LOCATED_IN")
+RelationshipTypeInsert("POST_IS_LOCATED_IN")
+RelationshipTypeInsert("COMMENT_IS_LOCATED_IN")
+--RelationshipTypeInsert("HAS_CREATOR")
+RelationshipTypeInsert("POST_HAS_CREATOR")
+RelationshipTypeInsert("COMMENT_HAS_CREATOR")
+--RelationshipTypeInsert("HAS_TAG")
+RelationshipTypeInsert("FORUM_HAS_TAG")
+RelationshipTypeInsert("POST_HAS_TAG")
+RelationshipTypeInsert("COMMENT_HAS_TAG")
+
 RelationshipTypeInsert("HAS_MEMBER")
 RelationshipPropertyTypeAdd("HAS_MEMBER", "joinDate", "date")
-RelationshipTypeInsert("HAS_MODERATOR")
-RelationshipTypeInsert("HAS_TAG")
-RelationshipTypeInsert("HAS_TYPE")
-RelationshipTypeInsert("IS_LOCATED_IN")
-RelationshipTypeInsert("IS_PART_OF")
-RelationshipTypeInsert("IS_SUBCLASS_OF")
+RelationshipPropertyTypeAdd("HAS_MEMBER", "numPosts", "integer")
+
 RelationshipTypeInsert("KNOWS")
 RelationshipPropertyTypeAdd("KNOWS", "creationDate", "date")
 RelationshipPropertyTypeAdd("KNOWS", "weight", "integer")
+
+-- Conforming Logical Relationship Types
+RelationshipTypeInsert("CONTAINER_OF")
+RelationshipTypeInsert("HAS_INTEREST")
+RelationshipTypeInsert("HAS_MODERATOR")
+RelationshipTypeInsert("HAS_TYPE")
+RelationshipTypeInsert("IS_PART_OF")
+RelationshipTypeInsert("IS_SUBCLASS_OF")
 RelationshipTypeInsert("LIKES")
 RelationshipPropertyTypeAdd("LIKES", "creationDate", "date")
 RelationshipTypeInsert("REPLY_OF")
@@ -70,7 +85,6 @@ RelationshipTypeInsert("STUDY_AT")
 RelationshipPropertyTypeAdd("STUDY_AT", "classYear", "integer")
 RelationshipTypeInsert("WORK_AT")
 RelationshipPropertyTypeAdd("WORK_AT", "workFrom", "integer")
-
 
 
 NodeTypesGet(), RelationshipTypesGet()

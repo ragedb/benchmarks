@@ -78,22 +78,31 @@ ldbc_snb_iq01 = function(person_id, firstName)
         local person_id = person["node_id"]
         local studied_list = {}
         local worked_list = {}
-        local studied = NodeGetRelationships(person_id, Direction.OUT, "STUDY_AT" )
-        local worked = NodeGetRelationships(person_id, Direction.OUT, "WORK_AT" )
+        local studied = NodeGetRelationships(person_id, Direction.OUT, "STUDY_AT")
+        local worked = NodeGetRelationships(person_id, Direction.OUT, "WORK_AT")
 
         for s = 1, #studied do
-            table.insert(studied_list, NodeGetProperty(studied[s]:getEndingNodeId(), "name"))
-            table.insert(studied_list, studied[s]:getProperty("classYear"))
+            local temp = {}
+            table.insert(temp, NodeGetProperty(studied[s]:getEndingNodeId(), "name"))
+            table.insert(temp, studied[s]:getProperty("classYear"))
+            table.insert(temp, NodeGetNeighbors(studied[s]:getEndingNodeId(), Direction.OUT, "ORGANISATION_IS_LOCATED_IN")[1]:getProperty("name"))
+            table.insert(studied_list, table.concat(temp, ", "))
         end
 
        for s = 1, #worked do
-          table.insert(worked_list, NodeGetProperty(worked[s]:getEndingNodeId(), "name"))
-          table.insert(worked_list, worked[s]:getProperty("workFrom"))
+          local temp = {}
+          table.insert(temp, NodeGetProperty(worked[s]:getEndingNodeId(), "name"))
+          table.insert(temp, worked[s]:getProperty("workFrom"))
+          table.insert(temp, NodeGetNeighbors(worked[s]:getEndingNodeId(), Direction.OUT, "ORGANISATION_IS_LOCATED_IN")[1]:getProperty("name"))
+          table.insert(worked_list, table.concat(temp, ", "))
        end
 
-      person["universities"] = table.concat(studied_list, ", ")
-      person["companies"] = table.concat(worked_list, ", ")
+       local located_in = NodeGetNeighbors(person_id, Direction.OUT, "PERSON_IS_LOCATED_IN" )
+
+      person["universities"] = studied_list
+      person["companies"] = worked_list
       person["otherPerson.creationDate"] = DateToISO(person["otherPerson.creationDate"])
+      person["locationCity.name"] = located_in[1]:getProperty("name")
       person["node_id"] = nil
       table.insert(results, person)
     end
@@ -110,7 +119,7 @@ ldbc_snb_iq02_orig = function(person_id, maxDate)
     local results = {}
       for i, friend in pairs(friends) do
           local properties = friend:getProperties()
-          local messages = NodeGetNeighbors(friend:getId(), Direction.IN, "HAS_CREATOR")
+          local messages = NodeGetNeighbors(friend:getId(), Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
           for j, message in pairs(messages) do
             local msg_properties = message:getProperties()
             if (date(msg_properties["creationDate"]) < maxDate) then
@@ -157,7 +166,7 @@ ldbc_snb_iq02 = function(person_id, maxDate)
     local node_id = NodeGetId("Person", person_id)
     local friends = NodeGetLinks(node_id, "KNOWS")
     local friend_properties = LinksGetNodeProperties(friends)
-    local messages = LinksGetNeighborIds(friends, Direction.IN, "HAS_CREATOR")
+    local messages = LinksGetNeighborIds(friends, Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
 
     local results = {}
     local friend_properties_map = {}
@@ -236,7 +245,7 @@ ldbc_snb_iq03_orig = function(person_id, country_x_name, country_y_name, start_d
     cities_of_countries:addIds(country_y_cities)
 
     -- Eliminate people that are local to either country
-    local cities_of_people = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.OUT, "IS_LOCATED_IN", cities_of_countries:getIds())
+    local cities_of_people = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.OUT, "PERSON_IS_LOCATED_IN", cities_of_countries:getIds())
     for person_id, citi_ids in pairs(cities_of_people) do
         otherPerson:remove(person_id)
     end
@@ -246,11 +255,11 @@ ldbc_snb_iq03_orig = function(person_id, country_x_name, country_y_name, start_d
     table.sort(country_ids)
     local person_candidates = {}
     local message_candidates = Roar.new()
-    local messages_of_people = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
+    local messages_of_people = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
     for person_id, message_ids in pairs(messages_of_people) do
         local country_x_messages = {}
         local country_y_messages = {}
-        local messages_country_ids = NodeIdsGetNeighborIds(message_ids, Direction.OUT, "IS_LOCATED_IN", country_ids)
+        local messages_country_ids = NodeIdsGetNeighborIds(message_ids, Direction.OUT, {"POST_IS_LOCATED_IN", "COMMENT_IS_LOCATED_IN"}, country_ids)
         for message_id, country_ids in pairs(messages_country_ids) do
             if (country_ids[1] == country_x_node_id) then
               table.insert(country_x_messages, message_id)
@@ -329,8 +338,8 @@ ldbc_snb_iq03 = function(person_id, country_x_name, country_y_name, start_date, 
 
     -- Find the people that are local to either country
     local localPerson = Roar.new()
-    local country_x_people = NodeIdsGetNeighborIds(country_x_cities, Direction.IN, "IS_LOCATED_IN")
-    local country_y_people = NodeIdsGetNeighborIds(country_y_cities, Direction.IN, "IS_LOCATED_IN")
+    local country_x_people = NodeIdsGetNeighborIds(country_x_cities, Direction.IN, "PERSON_IS_LOCATED_IN")
+    local country_y_people = NodeIdsGetNeighborIds(country_y_cities, Direction.IN, "PERSON_IS_LOCATED_IN")
 
     local locals_of_countries = Roar.new()
     for city_id, person_ids in pairs(country_x_people) do
@@ -341,7 +350,7 @@ ldbc_snb_iq03 = function(person_id, country_x_name, country_y_name, start_date, 
     end
 
     -- Find the messages from each country that fit the time range
-    local countries_message_ids = NodeIdsGetNeighborIds(country_ids, Direction.IN, "IS_LOCATED_IN")
+    local countries_message_ids = NodeIdsGetNeighborIds(country_ids, Direction.IN, {"POST_IS_LOCATED_IN", "COMMENT_IS_LOCATED_IN"})
 
     local valid_countries_message_ids = {}
     for country_id, message_ids in pairs(countries_message_ids) do
@@ -369,8 +378,8 @@ ldbc_snb_iq03 = function(person_id, country_x_name, country_y_name, start_date, 
     -- Count the messages of each creator by country
     local x_results = {}
     local y_results = {}
-    local valid_creators_of_country_x = NodeIdsGetNeighborIds(valid_countries_message_ids[country_x_node_id], Direction.OUT, "HAS_CREATOR")
-    local valid_creators_of_country_y = NodeIdsGetNeighborIds(valid_countries_message_ids[country_y_node_id], Direction.OUT, "HAS_CREATOR")
+    local valid_creators_of_country_x = NodeIdsGetNeighborIds(valid_countries_message_ids[country_x_node_id], Direction.OUT, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
+    local valid_creators_of_country_y = NodeIdsGetNeighborIds(valid_countries_message_ids[country_y_node_id], Direction.OUT, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
     local countryXCreator = Roar.new()
     local countryYCreator = Roar.new()
     for message_id, creator_id in pairs(valid_creators_of_country_x) do
@@ -429,13 +438,13 @@ ldbc_snb_iq04 = function(person_id, start_date, duration_days)
     -- Find the friends
     local friends = NodeGetNeighborIds(node_id, "KNOWS")
     -- Get the Posts of Friends
-    local posts_of_friends = NodeIdsGetNeighborIds(friends, Direction.IN, "HAS_CREATOR")
+    local posts_of_friends = NodeIdsGetNeighborIds(friends, Direction.IN, "POST_HAS_CREATOR")
     -- Collect the dates each tag was used by friends based on the post creation date
     local tag_count = {}
     for friend_id, post_ids in pairs(posts_of_friends) do
         local less_than_end_date = FilterNodeIds(post_ids, "Message", "creationDate", Operation.LT, end_date, 0, 10000000)
         local post_id_creation_date = NodesGetProperty(less_than_end_date, "creationDate")
-        local post_id_tag_ids =  NodeIdsGetNeighborIds(less_than_end_date, Direction.OUT, "HAS_TAG")
+        local post_id_tag_ids =  NodeIdsGetNeighborIds(less_than_end_date, Direction.OUT, ""POST_HAS_TAG"")
         for post_id, creation_date in pairs(post_id_creation_date) do
             local tag_ids = post_id_tag_ids[post_id]
             for i = 1, #tag_ids do
@@ -531,7 +540,7 @@ ldbc_snb_iq05 = function(person_id, min_date)
     for forum_id, post_ids in pairs(forum_posts) do
         -- sum the posts in the forum that were created by the other ids
         local forum_count = 0
-        local post_count = NodeIdsGetNeighborIds(post_ids, Direction.OUT, "HAS_CREATOR", forum_id_valid_other_ids[forum_id]:getIds())
+        local post_count = NodeIdsGetNeighborIds(post_ids, Direction.OUT, "POST_HAS_CREATOR", forum_id_valid_other_ids[forum_id]:getIds())
         for post_id, _ in pairs(post_count) do
             forum_count = forum_count + 1
         end
@@ -577,10 +586,10 @@ ldbc_snb_iq06 = function(person_id, tagName)
     otherPerson:remove(node_id)
 
     -- From the starting tag, get all the posts
-    local tagged_post_ids = NodeGetNeighborIds(tag_id, Direction.IN, "HAS_TAG")
+    local tagged_post_ids = NodeGetNeighborIds(tag_id, Direction.IN, "POST_HAS_TAG")
 
     -- From these posts, get all the creators that are our friends and fofs
-    local posts_creator_ids = NodeIdsGetNeighborIds(tagged_post_ids, Direction.OUT, "HAS_CREATOR", otherPerson:getIds())
+    local posts_creator_ids = NodeIdsGetNeighborIds(tagged_post_ids, Direction.OUT, "POST_HAS_CREATOR", otherPerson:getIds())
 
     -- Collect the tagged posts of our friends and fofs
     local valid_posts = Roar.new()
@@ -589,7 +598,7 @@ ldbc_snb_iq06 = function(person_id, tagName)
     end
 
     local post_counts = {}
-    local posts_tag_ids = NodeIdsGetNeighborIds(valid_posts:getIds(), Direction.OUT, "HAS_TAG")
+    local posts_tag_ids = NodeIdsGetNeighborIds(valid_posts:getIds(), Direction.OUT, "POST_HAS_TAG")
     for post_id, tag_ids in pairs(posts_tag_ids) do
         for i = 1, #tag_ids do
             post_counts[tag_ids[i]] = (post_counts[tag_ids[i]] or 0) + 1
@@ -628,7 +637,7 @@ ldbc_snb_iq07 = function(person_id)
     local friends = Roar.new()
     friends:addIds(people)
 
-    local created = NodeGetNeighborIds(node_id, Direction.IN, "HAS_CREATOR")
+    local created = NodeGetNeighborIds(node_id, Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
     local messages = Roar.new()
     messages:addIds(created)
     local message_likes = LinksGetLinks(messages:getNodeHalfLinks(), Direction.IN, "LIKES")
@@ -680,7 +689,7 @@ end
 -- Interactive Query 8
 ldbc_snb_iq08 = function(person_id)
     local node_id = NodeGetId("Person", person_id)
-    local created = NodeGetNeighborIds(node_id, Direction.IN, "HAS_CREATOR")
+    local created = NodeGetNeighborIds(node_id, Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
     local messages = Roar.new()
     messages:addIds(created)
     local message_replies = NodeIdsGetNeighborIds(messages:getIds(), Direction.IN, "REPLY_OF")
@@ -691,7 +700,7 @@ ldbc_snb_iq08 = function(person_id)
     local results = {}
     for i = 1, #latest do
         local msg_properties = latest[i]:getProperties()
-        local author = NodeGetNeighbors(latest[i], Direction.OUT, "HAS_CREATOR")[1]
+        local author = NodeGetNeighbors(latest[i], Direction.OUT, "COMMENT_HAS_CREATOR")[1]
         local author_props = author:getProperties()
         local result = {
            ["commentAuthor.id"] = author_props["id"],
@@ -733,7 +742,7 @@ ldbc_snb_iq09 = function(person_id, max_date)
     -- Remove original person from friends and fof list
     otherPerson:remove(node_id)
 
-    local otherPerson_messages = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, "HAS_CREATOR")
+    local otherPerson_messages = NodeIdsGetNeighborIds(otherPerson:getIds(), Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
     local messages = Roar.new()
     messages:addValues(otherPerson_messages)
     local latest = FilterNodes(messages:getIds(), "Message", "creationDate", Operation.LT, maxDate_double, 0, 20, Sort.DESC)
@@ -741,7 +750,7 @@ ldbc_snb_iq09 = function(person_id, max_date)
     local results = {}
     for i = 1, #latest do
         local msg_properties = latest[i]:getProperties()
-        local author = NodeGetNeighbors(latest[i], Direction.OUT, "HAS_CREATOR")[1]
+        local author = NodeGetNeighbors(latest[i], Direction.OUT, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})[1]
         local author_props = author:getProperties()
         local result = {
            ["otherPerson.id"] = author_props["id"],
@@ -789,8 +798,7 @@ ldbc_snb_iq11 = function(person_id, country_name, workFromYear)
 
     -- Get the country and the companies in that country (we unfortunately get messages as well due to a weird model)
     local country_id = FindNodeIds("Place", "name", Operation.EQ, country_name, 0, 1)[1]
-    local company_ids = NodeGetNeighborIds(country_id, Direction.IN, "IS_LOCATED_IN") -- gets companies and messages
-    --local company_ids = NodeGetNeighborIds(country_id, Direction.IN, "ORG_IS_LOCATED_IN") -- gets just companies, but requires updating the schema
+    local company_ids = NodeGetNeighborIds(country_id, Direction.IN, "ORGANISATION_IS_LOCATED_IN") -- gets companies
     local companies = Roar.new()
     companies:addIds(company_ids)
 
@@ -882,7 +890,7 @@ ldbc_snb_iq12 = function(person_id, tag_class_name)
      all_tag_ids:addValues(tag_ids)
 
      -- Get the Posts
-     local tag_posts = NodeIdsGetNeighborIds(all_tag_ids:getIds(), Direction.IN, "HAS_TAG")
+     local tag_posts = NodeIdsGetNeighborIds(all_tag_ids:getIds(), Direction.IN, "POST_HAS_TAG")
      local all_posts = Roar.new()
      all_posts:addValues(tag_posts)
 
@@ -892,7 +900,7 @@ ldbc_snb_iq12 = function(person_id, tag_class_name)
      all_comments:addValues(posts_comments)
 
      -- Get the messages of the friends backwards
-     local comment_friends = NodeIdsGetNeighborIds(all_comments:getIds(), Direction.OUT, "HAS_CREATOR", friends)
+     local comment_friends = NodeIdsGetNeighborIds(all_comments:getIds(), Direction.OUT, "COMMENT_HAS_CREATOR", friends)
 
      local valid_friends = Roar.new()
      local results_count = {}

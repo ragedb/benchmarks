@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package rage
+package ldbc
 
 class TestParameters {
   def getProperty(propertyName: String, defaultValue: String): String = {

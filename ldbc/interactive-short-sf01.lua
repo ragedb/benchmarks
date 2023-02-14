@@ -3,7 +3,7 @@
 ldbc_snb_is01 = function(person_id)
 
     local properties = NodeGetProperties("Person", person_id)
-    local city = NodeGetNeighbors("Person", person_id, Direction.OUT, "IS_LOCATED_IN")[1]
+    local city = NodeGetNeighbors("Person", person_id, Direction.OUT, "PERSON_IS_LOCATED_IN")[1]
     local result = {
         ["person.firstName"] = properties["firstName"],
         ["person.lastName"] = properties["lastName"],
@@ -22,7 +22,7 @@ end
 ldbc_snb_is02 = function(person_id)
     local person = NodeGet("Person", person_id)
     local person_properties = person:getProperties()
-    local message_node_ids = NodeGetNeighborIds(person:getId(), Direction.IN, "HAS_CREATOR")
+    local message_node_ids = NodeGetNeighborIds(person:getId(), Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
     local messages = {}
     local messages_dates = NodesGetProperty(message_node_ids, "creationDate")
     local messages_ids = NodesGetProperty(message_node_ids, "id")
@@ -72,7 +72,7 @@ ldbc_snb_is02 = function(person_id)
                 node_id = hasReply[1]:getNodeId()
                 hasReply = NodeGetLinks(node_id, Direction.OUT, "REPLY_OF")
             end
-            local poster = NodeGetNeighbors(node_id, Direction.OUT, "HAS_CREATOR")[1]
+            local poster = NodeGetNeighbors(node_id, Direction.OUT, "POST_HAS_CREATOR")[1]
             local poster_properties = poster:getProperties()
             local post_id = NodeGetProperty(node_id, "id")
             result["post.id"] = post_id
@@ -146,7 +146,7 @@ ldbc_snb_is04("3")
 -- Interactive Short 5
 ldbc_snb_is05 = function(message_id)
 
-    local person = NodeGetNeighbors("Message", message_id, Direction.OUT, "HAS_CREATOR")[1]
+    local person = NodeGetNeighbors("Message", message_id, Direction.OUT, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})[1]
     local result = {
         ["person.id"] = person:getProperty("id"),
         ["person.firstName"] = person:getProperty("firstName"),
@@ -186,13 +186,13 @@ end
 ldbc_snb_is07 = function(message_id)
 
     local message_node_id = NodeGetId("Message", message_id)
-    local author = NodeGetNeighbors(message_node_id, Direction.OUT, "HAS_CREATOR")[1]
+    local author = NodeGetNeighbors(message_node_id, Direction.OUT, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})[1]
     local knows_ids = NodeGetNeighborIds(author:getId(), "KNOWS")
 
     local comments = {}
     local replies = NodeGetNeighbors(message_node_id, Direction.IN, "REPLY_OF")
     for i, reply in pairs (replies) do
-        local replyAuthor = NodeGetNeighbors(reply:getId(), Direction.OUT, "HAS_CREATOR")[1]
+        local replyAuthor = NodeGetNeighbors(reply:getId(), Direction.OUT, "COMMENT_HAS_CREATOR")[1]
         local properties = replyAuthor:getProperties()
         local comment = {
             ["replyAuthor.id"] = properties["id"],
