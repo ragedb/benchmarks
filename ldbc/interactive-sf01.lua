@@ -443,8 +443,8 @@ ldbc_snb_iq04 = function(person_id, start_date, duration_days)
     local tag_count = {}
     for friend_id, post_ids in pairs(posts_of_friends) do
         local less_than_end_date = FilterNodeIds(post_ids, "Message", "creationDate", Operation.LT, end_date, 0, 10000000)
-        local post_id_creation_date = NodesGetProperty(less_than_end_date, "creationDate")
-        local post_id_tag_ids =  NodeIdsGetNeighborIds(less_than_end_date, Direction.OUT, ""POST_HAS_TAG"")
+        local post_id_creation_date = NodeIdsGetProperty(less_than_end_date, "creationDate")
+        local post_id_tag_ids =  NodeIdsGetNeighborIds(less_than_end_date, Direction.OUT, "POST_HAS_TAG")
         for post_id, creation_date in pairs(post_id_creation_date) do
             local tag_ids = post_id_tag_ids[post_id]
             for i = 1, #tag_ids do
@@ -467,7 +467,7 @@ ldbc_snb_iq04 = function(person_id, start_date, duration_days)
     for i = 1, #results do
       table.insert(tag_ids, results[i]["tag.name"])
     end
-    local tag_names = NodesGetProperty(tag_ids, "name")
+    local tag_names = NodeIdsGetProperty(tag_ids, "name")
     for i = 1, #results do
       results[i]["tag.name"] = tag_names[results[i]["tag.name"]]
     end
@@ -985,7 +985,7 @@ ldbc_snb_iq13 = function(person1_id, person2_id)
         if(next_left:cardinality() > 0) then
             left_people = NodeIdsGetNeighborIds(next_left:getIds(), "KNOWS")
             next_left:clear()
-            next_left:addIds(left_people)
+            next_left:addValues(left_people)
             next_left:inplace_difference(seen_left)
             if (next_left:intersection(next_right):cardinality() > 0) then return length end
             length = length + 1
@@ -994,7 +994,7 @@ ldbc_snb_iq13 = function(person1_id, person2_id)
         if(next_right:cardinality() > 0) then
             right_people = NodeIdsGetNeighborIds(next_right:getIds(), "KNOWS")
             next_right:clear()
-            next_right:addIds(right_people)
+            next_right:addValues(right_people)
             next_right:inplace_difference(seen_right)
             if (next_right:intersection(next_left):cardinality() > 0) then return length end
             length = length + 1
