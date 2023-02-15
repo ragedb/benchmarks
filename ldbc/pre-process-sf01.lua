@@ -1,4 +1,4 @@
--- Takes about 10 minutes:
+-- Takes about 90 seconds:
 function calculate_weight(num_interactions)
     if (num_interactions > 0) then
         local integer, fraction = math.modf(40 - math.sqrt(num_interactions) + 0.5)
@@ -24,14 +24,14 @@ while (#all_knows > 0) do
         local person1_posts = posts_cache[person1_id]
         if (person1_posts == nil) then
             person1_posts = Roar.new()
-            person1_posts:addIds(NodeGetNeighborIds(person1_id, Direction.IN, "HAS_CREATOR"))
+            person1_posts:addIds(NodeGetNeighborIds(person1_id, Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"}))
             posts_cache[person1_id] = person1_posts
         end
 
         local person2_posts = posts_cache[person2_id]
         if (person2_posts == nil) then
             person2_posts = Roar.new()
-            person2_posts:addIds(NodeGetNeighborIds(person2_id, Direction.IN, "HAS_CREATOR"))
+            person2_posts:addIds(NodeGetNeighborIds(person2_id, Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"}))
             posts_cache[person2_id] = person2_posts
         end
 
@@ -65,4 +65,4 @@ while (#all_knows > 0) do
     all_knows = AllRelationships("KNOWS", skip, 10000)
 end
 
-"done preprocessing"
+"done preprocessing", rels:cardinality()

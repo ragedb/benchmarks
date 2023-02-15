@@ -18,14 +18,14 @@ ldbc_snb_is01 = function(person_id)
     return result
 end
 
--- Interactive Short 2 - Two NodesGetProperty
+-- Interactive Short 2 - Two NodeIdsGetProperty
 ldbc_snb_is02 = function(person_id)
     local person = NodeGet("Person", person_id)
     local person_properties = person:getProperties()
     local message_node_ids = NodeGetNeighborIds(person:getId(), Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
     local messages = {}
-    local messages_dates = NodesGetProperty(message_node_ids, "creationDate")
-    local messages_ids = NodesGetProperty(message_node_ids, "id")
+    local messages_dates = NodeIdsGetProperty(message_node_ids, "creationDate")
+    local messages_ids = NodeIdsGetProperty(message_node_ids, "id")
 
     for i, id in pairs(message_node_ids) do
     local properties = {
