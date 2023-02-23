@@ -64,57 +64,9 @@ Results as of February 2, 2023, on LDBC SNB SF01:
 | IS07  | 1330813 | 1330813 | 0   | 21816 |   0 |    1 |   25 |    0 |
 
 
-8 Concurrent Threads:
-
-| Query |   Total |      OK | KO  |   q/s | min |  99th |   max | mean |
-|-------|--------:|--------:|-----|------:|----:|------:|------:|-----:|
-| IQ01  |    6709 |    6709 | 0   |   110 |   4 |   156 |   208 |   71 |
-| IQ02  |   23434 |   23434 | 0   |   384 |   3 |    27 |    51 |   20 |
-| IQ03  |   50098 |   50098 | 0   |   821 |   3 |    15 |    33 |   10 |
-| IQ04  |   11232 |   11232 | 0   |   184 |   0 |    89 |   117 |   43 |
-| IQ05  |      91 |      91 | 0   |   1.4 | 831 | 10104 | 10269 | 5494 |
-| IQ06  |   22091 |   22091 | 0   |   362 |   4 |    35 |   124 |   22 |
-| IQ07  |   17810 |   17810 | 0   |   292 |   1 |    57 |    82 |   27 |
-| IQ08  |  191486 |  191486 | 0   |  3139 |   0 |     6 |    29 |    2 |
-| IQ09  |     185 |     185 | 0   |   2.9 | 799 |  3838 |  3937 | 2650 |
-| IQ11  |   59577 |   59577 | 0   |   977 |   2 |    13 |    47 |    8 |
-| IQ12  |   27321 |   27321 | 0   |   448 |   6 |    29 |    57 |   17 |
-| IQ13  | 2876903 | 2876903 | 0   | 47162 |   0 |     1 |    22 |    0 |
-| IS01  | 2278393 | 2278393 | 0   | 37350 |   0 |     1 |    22 |    0 |
-| IS02  |  122126 |  122126 | 0   |  2002 |   0 |    11 |    31 |    4 |
-| IS03  |  142660 |  142660 | 0   |  2339 |   0 |    13 |    26 |    3 |
-| IS04  | 3915755 | 3915755 | 0   | 64193 |   0 |     1 |    20 |    0 |
-| IS05  | 3466519 | 3466519 | 0   | 56828 |   0 |     1 |    25 |    0 |
-| IS06  | 2273560 | 2273560 | 0   | 37271 |   0 |     1 |    27 |    0 |
-| IS07  | 1427405 | 1427405 | 0   | 23400 |   0 |     1 |    26 |    0 |
-
-64 Concurrent Threads: 
-
-| Query |   Total |      OK | KO  |   q/s |  min |  99th |   max |  mean |
-|-------|--------:|--------:|-----|------:|-----:|------:|------:|------:|
-| IQ01  |    6957 |    6957 | 0   |   114 |   35 |   782 |   952 |   554 |
-| IQ02  |   23671 |   23671 | 0   |   388 |   19 |   177 |   210 |   162 |
-| IQ03  |   51318 |   51318 | 0   |   841 |   15 |    85 |   113 |    75 |
-| IQ04  |   11376 |   11376 | 0   |   186 |   18 |   443 |   509 |   338 |
-| IQ05  |     151 |     151 | 0   |   1.4 | 1674 | 54785 | 56583 | 35155 |
-| IQ06  |   22324 |   22324 | 0   |   366 |   16 |   221 |   409 |   172 |
-| IQ07  |   17734 |   17734 | 0   |   291 |   20 |   319 |   399 |   217 |
-| IQ08  |  191254 |  191254 | 0   |  3135 |    0 |    32 |    70 |    20 |
-| IQ09  |     245 |     245 | 0   |   3.0 |  854 | 23487 | 24033 | 18530 |
-| IQ11  |   61314 |   61314 | 0   |  1005 |   10 |    76 |   100 |    63 |
-| IQ12  |   27668 |   27668 | 0   |   454 |   18 |   169 |   206 |   139 |
-| IQ13  | 2863559 | 2863559 | 0   | 43944 |    0 |     4 |    44 |     1 |
-| IS01  | 2274684 | 2274684 | 0   | 37290 |    0 |     3 |    45 |     2 |
-| IS02  |  122200 |  122200 | 0   |  2003 |   15 |    46 |    61 |    31 |
-| IS03  |  145121 |  145121 | 0   |  2379 |    5 |    47 |    84 |    26 |
-| IS04  | 4058758 | 4058758 | 0   | 66537 |    0 |     2 |    48 |     1 |
-| IS05  | 3453735 | 3453735 | 0   | 56619 |    0 |     2 |    53 |     1 |
-| IS06  | 2248215 | 2248215 | 0   | 36856 |    0 |     3 |    36 |     2 |
-| IS07  | 1423384 | 1423384 | 0   | 23334 |    0 |     5 |    42 |     3 |
-
 Benchmark Parameters:
 
-    userCount: 4,8, 64      // Concurrent requests
+    userCount: 4            // Concurrent requests
     duration:  60 seconds   // Test duration
     ragedb -c4              // This limits RageDB to 4 (out of the 8) cores
 
@@ -132,34 +84,6 @@ Physical Server:
 3. Create the stored procedures
 
 See the top level ldbc folder for details.
-
-### Pre-Requisites for generic queries
-
-- Create a "Node" node type with a name String property.
-- Create an "Address" node type with these properties: uuid, street_address, city, state, zip_code
-- Create 10 relationship types TYPE_1, TYPE_2, ... TYPE_10 
-
-
-    NodeTypeInsert("Node")
-    NodePropertyTypeAdd("Node", "name", "string")
-    
-    NodeTypeInsert("Address")
-    NodePropertyTypeAdd("Address", "uuid", "integer")
-    NodePropertyTypeAdd("Address", "street_address", "string")
-    NodePropertyTypeAdd("Address", "city", "string")
-    NodePropertyTypeAdd("Address", "state", "string")
-    NodePropertyTypeAdd("Address", "title", "zip_code")
-    
-    RelationshipTypeInsert("TYPE_1")
-    RelationshipTypeInsert("TYPE_2")
-    RelationshipTypeInsert("TYPE_3")
-    RelationshipTypeInsert("TYPE_4")
-    RelationshipTypeInsert("TYPE_5")
-    RelationshipTypeInsert("TYPE_6")
-    RelationshipTypeInsert("TYPE_7")
-    RelationshipTypeInsert("TYPE_8")
-    RelationshipTypeInsert("TYPE_9")
-    RelationshipTypeInsert("TYPE_10")
 
 
 
@@ -182,11 +106,11 @@ to your RageDB server endpoint, then run:
 
 To run specific tests:
 
-    mvn gatling:test -Dgatling.simulationClass=rage.CreateNodeUniformNoProperties
+    mvn gatling:test -Dgatling.simulationClass=ldbc.Interactive01
 
 You can pass in test parameters for the simulation
 
-    mvn gatling:test -DUSERS=8 -DDURATION=30 -RAGE_URL="http://127.0.0.1:7243" -DRAGE_DB=rage -Dgatling.simulationClass=rage.CreateNodeUniformNoProperties
+    mvn gatling:test -DUSERS=4 -DDURATION=30 -DRAGE_URL="http://127.0.0.1:7243" -DRAGE_DB=rage -Dgatling.simulationClass=ldbc.Interactive01
 
 
 export SF=1

@@ -1,3 +1,26 @@
+local person_id = "30786325583618"
+local month = 11
+ldbc_snb_iq14 = function(person1_id, person2_id)
+
+end
+
+local person1_id = "17592186055119"
+local person2_id = "8796093025131"
+
+    local node1_id = NodeGetId("Person", person1_id)
+    local node2_id = NodeGetId("Person", person2_id)
+    -- if the nodes are the same
+    if (node1_id == node2_id) then
+        if (node1_id > 0) then
+            return { ["personIdsInPath"] = { node1_id }, ["pathWeight"] = 0 }
+        end
+        return { ["personIdsInPath"] = {} , ["pathWeight"] = 0 }
+    end
+
+
+
+
+
 function calculate_weight(num_interactions)
     if (num_interactions > 0) then
         local integer, fraction = math.modf(40 - math.sqrt(num_interactions) + 0.5)

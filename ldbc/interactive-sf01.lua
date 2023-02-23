@@ -164,9 +164,9 @@ end
 ldbc_snb_iq02 = function(person_id, maxDate)
     local maxDate_double = maxDate / 1000.0
     local node_id = NodeGetId("Person", person_id)
-    local friends = NodeGetLinks(node_id, "KNOWS")
-    local friend_properties = LinksGetNodeProperties(friends)
-    local messages = LinksGetNeighborIds(friends, Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
+    local friends = NodeGetNeighborIds(node_id, "KNOWS")
+    local friend_properties = NodeIdsGetProperties(friends)
+    local messages = NodeIdsGetNeighborIds(friends, Direction.IN, {"POST_HAS_CREATOR", "COMMENT_HAS_CREATOR"})
 
     local results = {}
     local friend_properties_map = {}
@@ -174,8 +174,8 @@ ldbc_snb_iq02 = function(person_id, maxDate)
       friend_properties_map[id] = properties
     end
 
-    for link, user_message_ids in pairs(messages) do
-         local properties = friend_properties_map[link:getNodeId()]
+    for friend_id, user_message_ids in pairs(messages) do
+         local properties = friend_properties_map[friend_id]
          local messages_props = FilterNodeProperties(user_message_ids, "Message", "creationDate", Operation.LT, maxDate_double, 0, 20, Sort.DESC)
          for j, msg_properties in pairs(messages_props) do
                local result = {
@@ -783,6 +783,9 @@ ldbc_snb_iq09 = function(person_id, max_date)
 end
 
 -- Interactive Query 10
+ldbc_snb_iq10 = function(person_id, month)
+
+end
 
 -- Interactive Query 11
 ldbc_snb_iq11 = function(person_id, country_name, workFromYear)
@@ -1006,3 +1009,6 @@ ldbc_snb_iq13 = function(person1_id, person2_id)
 end
 
 -- Interactive Query 14
+ldbc_snb_iq14 = function(person1_id, person2_id)
+
+end
