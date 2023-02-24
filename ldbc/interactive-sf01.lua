@@ -365,9 +365,7 @@ ldbc_snb_iq03 = function(person_id, country_x_name, country_y_name, start_date, 
 
     local otherPerson = Roar.new()
     otherPerson:addIds(friends)
-    for friend_id, fof_ids in pairs(friend_of_friends) do
-        otherPerson:addIds(fof_ids)
-    end
+    otherPerson:addValues(friend_of_friends)
 
     -- Remove original person from friends and fof list
     otherPerson:remove(node_id)
@@ -498,9 +496,8 @@ ldbc_snb_iq05 = function(person_id, min_date)
 
     local otherPerson = Roar.new()
     otherPerson:addIds(friends)
-    for friend_id, fof_ids in pairs(friend_of_friends) do
-        otherPerson:addIds(fof_ids)
-    end
+    otherPerson:addValues(friend_of_friends)
+
     -- Remove original person from friends and fof list
     otherPerson:remove(node_id)
 
@@ -579,9 +576,7 @@ ldbc_snb_iq06 = function(person_id, tagName)
     -- Collect friends and fofs
     local otherPerson = Roar.new()
     otherPerson:addIds(friends)
-    for friend_id, fof_ids in pairs(friend_of_friends) do
-        otherPerson:addIds(fof_ids)
-    end
+    otherPerson:addValues(friend_of_friends)
     -- Remove starting person
     otherPerson:remove(node_id)
 
@@ -624,8 +619,14 @@ ldbc_snb_iq06 = function(person_id, tagName)
 
     local smaller = table.move(results, 1, 10, 1, {})
 
+    local tag_ids = {}
     for i = 1, #smaller do
-      smaller[i]["otherTag.name"] = NodeGetProperty(smaller[i]["otherTag.name"], "name")
+        table.insert(tag_ids, smaller[i]["otherTag.name"])
+    end
+
+    local tag_names = NodeIdsGetProperty(tag_ids, "name")
+    for i = 1, #smaller do
+      smaller[i]["otherTag.name"] = tag_names[smaller[i]["otherTag.name"]]
     end
     return smaller
 end
